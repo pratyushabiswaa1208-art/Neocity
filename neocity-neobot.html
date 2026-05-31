@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NeoCity — NeoBot AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Exo+2:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ng:#00ff88;--nc:#00e5ff;--ny:#ffe600;--nr:#ff4d6d;--np:#a855f7;
+  --dark:#04080f;--panel:rgba(6,20,38,0.92);--border:rgba(0,229,255,0.16);
+  --bright:#e8f4ff;--muted:rgba(180,210,240,0.55);--ibg:rgba(0,20,45,0.7);
+  --gg:0 0 14px rgba(0,255,136,0.4),0 0 40px rgba(0,255,136,0.12);
+  --gc:0 0 14px rgba(0,229,255,0.4),0 0 40px rgba(0,229,255,0.12);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Exo 2',sans-serif;background:var(--dark);color:var(--bright);min-height:100vh;overflow-x:hidden}
+
+/* ── BACKGROUND ── */
+.bg-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-sky{position:absolute;inset:0;background:linear-gradient(180deg,#000408 0%,#020c1a 30%,#031a2e 60%,#041f38 85%,#051525 100%)}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);background-size:48px 48px}
+.bg-stars{position:absolute;inset:0}
+.bg-stars::before,.bg-stars::after{content:'';position:absolute;inset:0}
+.bg-stars::before{background-image:radial-gradient(1px 1px at 8% 12%,rgba(255,255,255,.7) 0%,transparent 100%),radial-gradient(1px 1px at 22% 6%,rgba(255,255,255,.5) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 38% 18%,rgba(255,255,255,.8) 0%,transparent 100%),radial-gradient(1px 1px at 55% 4%,rgba(255,255,255,.6) 0%,transparent 100%),radial-gradient(1px 1px at 70% 16%,rgba(0,229,255,.5) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 85% 9%,rgba(255,255,255,.7) 0%,transparent 100%),radial-gradient(1px 1px at 62% 28%,rgba(0,255,136,.4) 0%,transparent 100%),radial-gradient(1px 1px at 15% 35%,rgba(255,255,255,.4) 0%,transparent 100%),radial-gradient(1px 1px at 90% 22%,rgba(255,230,0,.3) 0%,transparent 100%),radial-gradient(1px 1px at 47% 40%,rgba(255,255,255,.5) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 30% 55%,rgba(0,229,255,.3) 0%,transparent 100%),radial-gradient(1px 1px at 73% 47%,rgba(0,255,136,.3) 0%,transparent 100%)}
+.bg-stars::after{background-image:radial-gradient(1px 1px at 33% 10%,rgba(255,255,255,.6) 0%,transparent 100%),radial-gradient(1px 1px at 63% 20%,rgba(255,255,255,.5) 0%,transparent 100%),radial-gradient(1px 1px at 79% 33%,rgba(255,255,255,.4) 0%,transparent 100%),radial-gradient(1px 1px at 5% 58%,rgba(255,255,255,.3) 0%,transparent 100%),radial-gradient(1px 1px at 92% 64%,rgba(0,229,255,.4) 0%,transparent 100%);animation:twinkle 4s ease-in-out infinite alternate}
+@keyframes twinkle{0%{opacity:.6}100%{opacity:1}}
+.scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:1}
+.vignette{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,.7) 100%);pointer-events:none;z-index:1}
+.particles{position:fixed;inset:0;pointer-events:none;z-index:2}
+.particle{position:absolute;border-radius:50%;animation:float-up linear infinite;opacity:0}
+@keyframes float-up{0%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:1}90%{opacity:.4}100%{transform:translateY(-100vh) translateX(30px);opacity:0}}
+
+/* ── LAYOUT ── */
+.wrapper{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.8rem;border-bottom:1px solid var(--border);backdrop-filter:blur(16px);background:rgba(4,8,15,.85);position:sticky;top:0;z-index:50;gap:.75rem;flex-wrap:wrap}
+.tb-logo{font-family:'Orbitron',monospace;font-size:.95rem;font-weight:900;letter-spacing:.18em;white-space:nowrap}
+.tb-logo span{color:var(--ng);text-shadow:var(--gg)}
+.tb-title-wrap{display:flex;flex-direction:column;gap:2px}
+.tb-title{font-family:'Orbitron',monospace;font-size:.58rem;font-weight:700;letter-spacing:.22em;color:var(--nc);text-transform:uppercase}
+.tb-title-sub{font-size:.52rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.tb-right{display:flex;align-items:center;gap:.6rem}
+.tb-btn{background:none;border:1px solid rgba(0,229,255,.2);border-radius:2px;padding:.28rem .65rem;font-family:'Exo 2',sans-serif;font-size:.62rem;letter-spacing:.1em;color:var(--muted);cursor:pointer;transition:all .2s;text-transform:uppercase;white-space:nowrap}
+.tb-btn:hover{border-color:rgba(0,229,255,.5);color:var(--nc)}
+
+/* ── HERO ── */
+.hero{padding:2.5rem 1.8rem 1.8rem;text-align:center;animation:fade-down .7s .1s cubic-bezier(.16,1,.3,1) both;display:flex;flex-direction:column;align-items:center}
+@keyframes fade-down{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+
+/* NeoBot Orb */
+.neobot-orb-wrap{position:relative;width:120px;height:120px;margin:0 auto 1.6rem;display:flex;align-items:center;justify-content:center}
+.orb-ring-outer{position:absolute;inset:-16px;border:1.5px dashed rgba(0,229,255,.2);border-radius:50%;animation:rotate-ring 10s linear infinite}
+.orb-ring-mid{position:absolute;inset:-6px;border:1px solid rgba(0,229,255,.12);border-radius:50%;border-top-color:rgba(0,229,255,.5);animation:rotate-ring 6s linear infinite reverse}
+.orb-node{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--nc);box-shadow:0 0 8px var(--nc);top:-4px;left:50%;transform:translateX(-50%);animation:rotate-ring 6s linear infinite reverse;transform-origin:4px 64px}
+@keyframes rotate-ring{to{transform:rotate(360deg)}}
+.orb-core{width:90px;height:90px;border-radius:50%;background:radial-gradient(circle at 38% 35%,rgba(0,229,255,.22),rgba(0,255,136,.08) 50%,rgba(0,20,50,.9) 80%);border:2px solid rgba(0,229,255,.4);box-shadow:0 0 30px rgba(0,229,255,.3),0 0 60px rgba(0,229,255,.1),inset 0 0 24px rgba(0,229,255,.08);display:flex;align-items:center;justify-content:center;position:relative;animation:orb-pulse 3s ease-in-out infinite}
+@keyframes orb-pulse{0%,100%{box-shadow:0 0 30px rgba(0,229,255,.3),0 0 60px rgba(0,229,255,.1),inset 0 0 24px rgba(0,229,255,.08)}50%{box-shadow:0 0 40px rgba(0,229,255,.5),0 0 80px rgba(0,229,255,.18),inset 0 0 32px rgba(0,229,255,.15)}}
+.orb-face{width:44px;height:44px;stroke:var(--nc);stroke-width:1.5;fill:none}
+.orb-scan{position:absolute;inset:0;border-radius:50%;background:linear-gradient(180deg,transparent 0%,rgba(0,229,255,.12) 48%,transparent 52%,transparent 100%);animation:scan-line 2.5s ease-in-out infinite}
+@keyframes scan-line{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.orb-glow-outer{position:absolute;inset:-24px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,255,.07) 0%,transparent 70%);pointer-events:none;animation:orb-pulse 3s ease-in-out infinite}
+
+.hero-eyebrow{font-size:.55rem;letter-spacing:.32em;text-transform:uppercase;color:var(--nc);margin-bottom:.5rem;display:flex;align-items:center;justify-content:center;gap:8px}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';flex:1;max-width:70px;height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,255,.4))}
+.hero-eyebrow::after{background:linear-gradient(90deg,rgba(0,229,255,.4),transparent)}
+.hero-title{font-family:'Orbitron',monospace;font-size:clamp(1.8rem,5vw,2.8rem);font-weight:900;letter-spacing:.14em;color:var(--bright);text-shadow:0 0 30px rgba(0,229,255,.25);margin-bottom:.3rem}
+.hero-title span{color:var(--nc);text-shadow:var(--gc)}
+.hero-greeting{font-size:clamp(.82rem,1.5vw,.95rem);color:var(--muted);letter-spacing:.04em;line-height:1.7;max-width:480px;margin-bottom:1.2rem}
+.hero-greeting strong{color:var(--ng);text-shadow:0 0 10px rgba(0,255,136,.3)}
+.hero-badges{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;animation:fade-down .6s .4s both}
+.h-badge{display:flex;align-items:center;gap:5px;border-radius:2px;padding:.28rem .65rem;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;border:1px solid;white-space:nowrap}
+.h-badge.online{border-color:rgba(0,255,136,.35);background:rgba(0,255,136,.06);color:var(--ng)}
+.h-badge.sdg{border-color:rgba(0,229,255,.28);background:rgba(0,229,255,.05);color:var(--nc)}
+.h-badge.climate{border-color:rgba(168,85,247,.35);background:rgba(168,85,247,.06);color:var(--np)}
+.h-badge.game{border-color:rgba(255,230,0,.28);background:rgba(255,230,0,.05);color:var(--ny)}
+.h-badge-dot{width:5px;height:5px;border-radius:50%;animation:pdot 2s infinite}
+.online .h-badge-dot{background:var(--ng);box-shadow:0 0 5px var(--ng)}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── KNOWLEDGE CARDS ── */
+.knowledge-section{padding:0 1.8rem 1.8rem;max-width:860px;margin:0 auto;width:100%;animation:fade-down .6s .35s both}
+.section-label{font-family:'Orbitron',monospace;font-size:.58rem;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:.9rem;display:flex;align-items:center;justify-content:center;gap:10px}
+.section-label::before,.section-label::after{content:'';flex:1;height:1px;background:var(--border);max-width:80px}
+.k-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.k-card{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:1rem 1rem .9rem;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;text-align:left}
+.k-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:.7}
+.k-card.kc-sdg::after{background:linear-gradient(90deg,transparent,var(--nc),transparent)}
+.k-card.kc-climate::after{background:linear-gradient(90deg,transparent,var(--np),transparent)}
+.k-card.kc-game::after{background:linear-gradient(90deg,transparent,var(--ng),transparent)}
+.k-card:hover{transform:translateY(-3px)}
+.k-card.kc-sdg:hover{border-color:rgba(0,229,255,.3);box-shadow:0 0 20px rgba(0,229,255,.12)}
+.k-card.kc-climate:hover{border-color:rgba(168,85,247,.3);box-shadow:0 0 20px rgba(168,85,247,.1)}
+.k-card.kc-game:hover{border-color:rgba(0,255,136,.3);box-shadow:0 0 20px rgba(0,255,136,.1)}
+.k-icon{font-size:1.6rem;margin-bottom:.5rem;line-height:1}
+.k-title{font-family:'Orbitron',monospace;font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:.3rem}
+.kc-sdg .k-title{color:var(--nc)}
+.kc-climate .k-title{color:var(--np)}
+.kc-game .k-title{color:var(--ng)}
+.k-desc{font-size:.65rem;color:var(--muted);line-height:1.55;letter-spacing:.03em}
+.k-count{margin-top:.5rem;font-family:'Share Tech Mono',monospace;font-size:.58rem;letter-spacing:.1em}
+.kc-sdg .k-count{color:rgba(0,229,255,.5)}
+.kc-climate .k-count{color:rgba(168,85,247,.5)}
+.kc-game .k-count{color:rgba(0,255,136,.5)}
+
+/* ── ASK NEOBOT SECTION ── */
+.ask-section{padding:0 1.8rem 2.5rem;max-width:860px;margin:0 auto;width:100%;animation:fade-down .6s .5s both}
+
+/* Pre-activation CTA */
+.ask-cta{border:1.5px solid rgba(0,229,255,.3);border-radius:4px;background:rgba(0,20,45,.6);backdrop-filter:blur(12px);padding:2rem 1.5rem;text-align:center;position:relative;overflow:hidden;cursor:pointer;transition:all .3s}
+.ask-cta::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,229,255,.08),transparent 65%);pointer-events:none}
+.ask-cta-glow{position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:2px;background:linear-gradient(90deg,transparent,var(--nc),transparent);animation:scan-bar 2.5s ease-in-out infinite alternate}
+@keyframes scan-bar{0%{opacity:.5}100%{opacity:1;box-shadow:0 0 12px var(--nc),0 0 24px rgba(0,229,255,.25)}}
+.ask-cta-inner{display:flex;flex-direction:column;align-items:center;gap:.7rem}
+.ask-cta-orb{width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 38% 35%,rgba(0,229,255,.2),rgba(0,20,50,.9) 70%);border:1.5px solid rgba(0,229,255,.4);box-shadow:0 0 20px rgba(0,229,255,.25);display:flex;align-items:center;justify-content:center;animation:orb-pulse 3s ease-in-out infinite}
+.ask-cta-orb svg{width:24px;height:24px;stroke:var(--nc);stroke-width:1.6;fill:none}
+.ask-cta-title{font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--nc);text-shadow:var(--gc)}
+.ask-cta-sub{font-size:.72rem;color:var(--muted);letter-spacing:.06em;line-height:1.6;max-width:380px}
+.ask-cta-btn{margin-top:.4rem;background:rgba(0,229,255,.08);border:1.5px solid var(--nc);border-radius:3px;padding:.72rem 2.2rem;font-family:'Orbitron',monospace;font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--nc);cursor:pointer;position:relative;overflow:hidden;transition:all .25s;box-shadow:var(--gc)}
+.ask-cta-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(0,229,255,.12),transparent);transform:translateX(-100%);transition:transform .45s}
+.ask-cta-btn:hover::after{transform:translateX(100%)}
+.ask-cta-btn:hover{background:rgba(0,229,255,.16);color:#fff;box-shadow:0 0 32px rgba(0,229,255,.4)}
+.ask-cta:hover{border-color:rgba(0,229,255,.5);box-shadow:0 0 40px rgba(0,229,255,.1);transform:translateY(-2px)}
+.ask-cta-hint{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(0,229,255,.4);margin-top:.2rem}
+
+/* ── CHAT CONTAINER ── */
+.chat-container{display:none;flex-direction:column;border:1.5px solid rgba(0,229,255,.25);border-radius:4px;background:rgba(2,10,24,.97);backdrop-filter:blur(20px);overflow:hidden;position:relative;max-height:78vh;min-height:480px}
+.chat-container.open{display:flex;animation:chat-reveal .5s cubic-bezier(.16,1,.3,1)}
+@keyframes chat-reveal{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.chat-accent-bar{height:2.5px;background:linear-gradient(90deg,transparent,var(--nc) 20%,var(--ng) 50%,var(--nc) 80%,transparent);flex-shrink:0;animation:scan-bar 2.5s ease-in-out infinite alternate}
+
+/* Chat header */
+.chat-header{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.2rem;border-bottom:1px solid var(--border);flex-shrink:0;gap:.5rem;flex-wrap:wrap}
+.ch-left{display:flex;align-items:center;gap:10px}
+.ch-orb{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 38% 35%,rgba(0,229,255,.18),rgba(0,20,50,.9) 70%);border:1.5px solid rgba(0,229,255,.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:orb-pulse 3s ease-in-out infinite}
+.ch-orb svg{width:14px;height:14px;stroke:var(--nc);stroke-width:1.8;fill:none}
+.ch-name{font-family:'Orbitron',monospace;font-size:.75rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--nc)}
+.ch-status{font-size:.55rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(0,255,136,.75);display:flex;align-items:center;gap:5px;margin-top:2px}
+.ch-status-dot{width:5px;height:5px;border-radius:50%;background:var(--ng);animation:pdot 1.8s infinite}
+.ch-right{display:flex;align-items:center;gap:6px}
+.ch-clear-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:2px;padding:.28rem .55rem;font-family:'Exo 2',sans-serif;font-size:.58rem;letter-spacing:.08em;color:var(--muted);cursor:pointer;transition:all .2s;text-transform:uppercase}
+.ch-clear-btn:hover{border-color:rgba(255,77,109,.4);color:var(--nr);background:rgba(255,77,109,.06)}
+.ch-close-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:2px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:all .2s;flex-shrink:0}
+.ch-close-btn:hover{border-color:rgba(255,77,109,.4);color:var(--nr);background:rgba(255,77,109,.06)}
+.ch-close-btn svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;stroke-linecap:round;fill:none}
+
+/* Category tabs */
+.chat-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.chat-tabs::-webkit-scrollbar{display:none}
+.cat-tab{background:transparent;border:none;padding:.55rem 1.1rem;font-family:'Orbitron',monospace;font-size:.56rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all .22s;position:relative;white-space:nowrap;flex-shrink:0}
+.cat-tab.active{color:var(--nc);background:rgba(0,229,255,.05)}
+.cat-tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--nc);box-shadow:0 0 6px var(--nc)}
+.cat-tab:not(.active):hover{color:var(--bright);background:rgba(255,255,255,.03)}
+
+/* Messages */
+.chat-messages{flex:1;overflow-y:auto;padding:.9rem 1.2rem;display:flex;flex-direction:column;gap:.75rem;scrollbar-width:thin;scrollbar-color:rgba(0,229,255,.15) transparent;min-height:180px}
+.chat-messages::-webkit-scrollbar{width:4px}
+.chat-messages::-webkit-scrollbar-thumb{background:rgba(0,229,255,.2);border-radius:2px}
+.chat-msg{display:flex;gap:9px;animation:msg-in .35s cubic-bezier(.16,1,.3,1) both}
+@keyframes msg-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.chat-msg.user{flex-direction:row-reverse}
+.msg-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:3px}
+.bot-av{background:radial-gradient(circle at 38% 35%,rgba(0,229,255,.18),rgba(0,20,50,.9) 70%);border:1px solid rgba(0,229,255,.3)}
+.bot-av svg{width:12px;height:12px;stroke:var(--nc);stroke-width:2;fill:none}
+.user-av{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.22);font-size:.7rem}
+.msg-bubble{max-width:82%;border-radius:2px;padding:.65rem .9rem;font-size:.76rem;line-height:1.7;letter-spacing:.03em;word-break:break-word}
+.bot-bubble{background:rgba(0,20,55,.75);border:1px solid rgba(0,229,255,.15);color:var(--bright);border-radius:2px 10px 10px 2px}
+.bot-bubble strong{color:var(--ng);font-weight:600}
+.bot-bubble em{color:var(--nc);font-style:normal}
+.user-bubble{background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.2);color:var(--ng);border-radius:10px 2px 2px 10px;text-align:right}
+.msg-time{font-size:.5rem;font-family:'Share Tech Mono',monospace;color:rgba(180,210,240,.25);margin-top:3px;text-align:right}
+.bot-msg .msg-time{text-align:left}
+
+/* Typing indicator */
+.typing-indicator{display:flex;gap:4px;align-items:center;padding:.6rem .75rem}
+.ty-dot{width:5px;height:5px;border-radius:50%;background:var(--nc);animation:ty-bounce 1.2s ease-in-out infinite}
+.ty-dot:nth-child(2){animation-delay:.2s}
+.ty-dot:nth-child(3){animation-delay:.4s}
+@keyframes ty-bounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+
+/* Quick prompts */
+.quick-prompts{flex-shrink:0;border-top:1px solid var(--border);background:rgba(0,10,28,.6)}
+.prompt-category{display:none;padding:.55rem 1rem;overflow-x:auto;scrollbar-width:none;gap:5px;flex-wrap:nowrap}
+.prompt-category::-webkit-scrollbar{display:none}
+.prompt-category.visible{display:flex}
+.prompt-chip{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.18);border-radius:2px;padding:.3rem .65rem;font-family:'Exo 2',sans-serif;font-size:.62rem;letter-spacing:.05em;color:var(--nc);cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0}
+.prompt-chip:hover{background:rgba(0,229,255,.14);border-color:rgba(0,229,255,.45)}
+.prompt-chip.green{border-color:rgba(0,255,136,.2);color:var(--ng);background:rgba(0,255,136,.05)}
+.prompt-chip.green:hover{background:rgba(0,255,136,.14);border-color:rgba(0,255,136,.45)}
+.prompt-chip.purple{border-color:rgba(168,85,247,.25);color:var(--np);background:rgba(168,85,247,.05)}
+.prompt-chip.purple:hover{background:rgba(168,85,247,.14);border-color:rgba(168,85,247,.4)}
+.prompt-chip.yellow{border-color:rgba(255,230,0,.2);color:var(--ny);background:rgba(255,230,0,.04)}
+.prompt-chip.yellow:hover{background:rgba(255,230,0,.1);border-color:rgba(255,230,0,.4)}
+
+/* Input row */
+.chat-input-row{display:flex;align-items:center;gap:8px;padding:.75rem 1.2rem;border-top:1px solid var(--border);flex-shrink:0;background:rgba(0,6,18,.8)}
+.chat-input{flex:1;background:var(--ibg);border:1px solid var(--border);border-radius:2px;padding:.58rem .85rem;font-family:'Exo 2',sans-serif;font-size:.82rem;color:var(--bright);outline:none;transition:border-color .2s,box-shadow .2s;letter-spacing:.03em}
+.chat-input:focus{border-color:rgba(0,229,255,.45);box-shadow:var(--gc)}
+.chat-input::placeholder{color:rgba(180,210,240,.22);font-size:.76rem}
+.chat-send-btn{background:rgba(0,229,255,.08);border:1.5px solid var(--nc);border-radius:2px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .22s;flex-shrink:0}
+.chat-send-btn:hover{background:rgba(0,229,255,.2);box-shadow:var(--gc)}
+.chat-send-btn:disabled{opacity:.3;cursor:not-allowed}
+.chat-send-btn svg{width:15px;height:15px;stroke:var(--nc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.chat-char-hint{font-size:.52rem;font-family:'Share Tech Mono',monospace;color:rgba(0,229,255,.3);letter-spacing:.06em;text-align:right;padding:0 1.2rem .4rem;flex-shrink:0}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%) translateY(-80px);background:rgba(4,20,40,.96);border:1px solid rgba(0,229,255,.3);border-radius:2px;padding:.5rem 1.4rem;font-size:.72rem;color:var(--nc);letter-spacing:.08em;transition:transform .4s cubic-bezier(.16,1,.3,1);z-index:200;white-space:nowrap;max-width:calc(100vw - 2rem);overflow:hidden;text-overflow:ellipsis}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── SDG SCROLL STRIP ── */
+.sdg-strip{padding:.6rem 1.8rem;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(0,8,20,.5);animation:fade-down .6s .45s both}
+.sdg-strip::-webkit-scrollbar{display:none}
+.sdg-pill{border-radius:2px;padding:.25rem .6rem;font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;cursor:pointer;transition:all .2s;border:1px solid;white-space:nowrap;font-family:'Exo 2',sans-serif;flex-shrink:0}
+.sdg-pill:hover{filter:brightness(1.3);transform:translateY(-1px)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  .topbar{padding:.65rem 1rem}
+  .hero{padding:2rem 1rem 1.4rem}
+  .neobot-orb-wrap{width:90px;height:90px}
+  .orb-core{width:72px;height:72px}
+  .orb-ring-outer{inset:-12px}
+  .orb-node{transform-origin:4px 50px}
+  .hero-title{font-size:1.6rem}
+  .knowledge-section{padding:0 1rem 1.4rem}
+  .k-cards{grid-template-columns:1fr}
+  .ask-section{padding:0 1rem 2rem}
+  .chat-messages{min-height:220px}
+  .sdg-strip{padding:.5rem 1rem}
+}
+@media(max-width:480px){
+  .k-cards{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND SCENE -->
+<div class="bg-scene">
+  <div class="bg-sky"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-stars"></div>
+</div>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+<div class="particles" id="particles"></div>
+<div class="toast" id="toast"></div>
+
+<!-- MAIN WRAPPER -->
+<div class="wrapper">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="tb-logo">NEO<span>CITY</span></div>
+      <div class="tb-title-wrap">
+        <div class="tb-title">NeoBot AI</div>
+        <div class="tb-title-sub">Sustainable Intelligence Interface</div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <button class="tb-btn" onclick="window.location.href='neocity-history.html'">← Logbook</button>
+      <button class="tb-btn" onclick="window.location.href='neocity-dashboard.html'">⌂ Dashboard</button>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="neobot-orb-wrap">
+      <div class="orb-glow-outer"></div>
+      <div class="orb-ring-outer"></div>
+      <div class="orb-ring-mid"></div>
+      <div class="orb-node"></div>
+      <div class="orb-core">
+        <div class="orb-scan"></div>
+        <svg class="orb-face" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="18" stroke="currentColor" stroke-width="1"/>
+          <circle cx="15" cy="19" r="3" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="29" cy="19" r="3" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="15.5" cy="19" r="1.2" fill="currentColor" stroke="none"/>
+          <circle cx="29.5" cy="19" r="1.2" fill="currentColor" stroke="none"/>
+          <path d="M16 27 Q22 31 28 27" stroke-linecap="round" stroke-width="1.5"/>
+          <path d="M10 12 L14 15M34 12 L30 15" stroke-linecap="round" stroke-width="1"/>
+          <path d="M22 4 L22 7M22 37 L22 40M4 22 L7 22M37 22 L40 22" stroke-linecap="round" stroke-width="1" opacity=".4"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="hero-eyebrow">Sustainable Intelligence</div>
+    <h1 class="hero-title">NEOBOT <span>AI</span></h1>
+    <p class="hero-greeting">
+      Hello, <strong id="hero-username">Commander</strong>! I'm your dedicated guide for
+      all 17 UN Sustainable Development Goals, climate science, environmental topics,
+      and your NeoCity game strategy.
+    </p>
+    <div class="hero-badges">
+      <span class="h-badge online"><span class="h-badge-dot"></span>Online</span>
+      <span class="h-badge sdg">17 SDGs</span>
+      <span class="h-badge climate">Climate & Eco</span>
+      <span class="h-badge game">City Guide</span>
+    </div>
+  </section>
+
+  <!-- SDG QUICK STRIP -->
+  <div class="sdg-strip" id="sdg-strip"></div>
+
+  <!-- KNOWLEDGE CARDS -->
+  <div class="knowledge-section">
+    <div class="section-label">Areas of Expertise</div>
+    <div class="k-cards">
+      <div class="k-card kc-sdg" onclick="openChat('sdg')">
+        <div class="k-icon">🌐</div>
+        <div class="k-title">All 17 SDGs</div>
+        <div class="k-desc">Deep knowledge of every UN Sustainable Development Goal — from No Poverty to Partnerships for the Goals.</div>
+        <div class="k-count">// SDG 1–17 · Full Scope</div>
+      </div>
+      <div class="k-card kc-climate" onclick="openChat('climate')">
+        <div class="k-icon">🌍</div>
+        <div class="k-title">Climate & Eco</div>
+        <div class="k-desc">Climate change causes, effects, solutions, biodiversity, ecosystems, carbon cycles, and environmental science.</div>
+        <div class="k-count">// Climate · Energy · Earth</div>
+      </div>
+      <div class="k-card kc-game" onclick="openChat('game')">
+        <div class="k-icon">🏙️</div>
+        <div class="k-title">City Guide</div>
+        <div class="k-desc">How to play NeoCity, build a green metropolis, maximize eco scores, and progress through all 10 levels.</div>
+        <div class="k-count">// LV.1 → LV.10 Strategy</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ASK NEOBOT SECTION -->
+  <div class="ask-section">
+
+    <!-- Pre-activation CTA (shown initially) -->
+    <div class="ask-cta" id="ask-cta" onclick="openChat('sdg')">
+      <div class="ask-cta-glow"></div>
+      <div class="ask-cta-inner">
+        <div class="ask-cta-orb">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M8 14c-4 1-6 3-6 5h20c0-2-2-4-6-5" stroke-linecap="round"/><circle cx="9.5" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="8" r="1" fill="currentColor" stroke="none"/><path d="M10.5 11.5 Q12 13 13.5 11.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="ask-cta-title">ASK NEOBOT</div>
+        <div class="ask-cta-sub">Your AI-powered guide for sustainable cities, climate action, and all UN Sustainable Development Goals. Click to begin your conversation.</div>
+        <button class="ask-cta-btn" onclick="event.stopPropagation();openChat('sdg')">
+          ◈ Start Conversation
+        </button>
+        <div class="ask-cta-hint">· SDGs · Climate · Game Tips · All Free ·</div>
+      </div>
+    </div>
+
+    <!-- CHAT CONTAINER (hidden until activated) -->
+    <div class="chat-container" id="chat-container">
+      <div class="chat-accent-bar"></div>
+
+      <!-- Chat Header -->
+      <div class="chat-header">
+        <div class="ch-left">
+          <div class="ch-orb">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M8 14c-4 1-6 3-6 5h20c0-2-2-4-6-5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <div class="ch-name">NeoBot AI</div>
+            <div class="ch-status"><span class="ch-status-dot"></span>Online · Sustainable Intelligence</div>
+          </div>
+        </div>
+        <div class="ch-right">
+          <button class="ch-clear-btn" onclick="clearChat()">Clear</button>
+          <button class="ch-close-btn" onclick="closeChat()" aria-label="Close chat">
+            <svg viewBox="0 0 14 14"><path d="M1 1l12 12M13 1L1 13"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Tabs -->
+      <div class="chat-tabs" id="chat-tabs">
+        <button class="cat-tab active" data-tab="sdg" onclick="switchTab('sdg')">🌐 SDGs</button>
+        <button class="cat-tab" data-tab="climate" onclick="switchTab('climate')">🌍 Climate</button>
+        <button class="cat-tab" data-tab="game" onclick="switchTab('game')">🏙️ Game Help</button>
+        <button class="cat-tab" data-tab="all" onclick="switchTab('all')">💬 All Topics</button>
+      </div>
+
+      <!-- Messages -->
+      <div class="chat-messages" id="chat-messages"></div>
+
+      <!-- Quick Prompts -->
+      <div class="quick-prompts">
+        <!-- SDG Tab -->
+        <div class="prompt-category visible" id="prompts-sdg">
+          <span class="prompt-chip" onclick="sendQuick(this.textContent)">What is SDG 11?</span>
+          <span class="prompt-chip" onclick="sendQuick(this.textContent)">List all 17 SDGs</span>
+          <span class="prompt-chip" onclick="sendQuick(this.textContent)">SDG 13 climate action</span>
+          <span class="prompt-chip" onclick="sendQuick(this.textContent)">SDG 7 clean energy</span>
+          <span class="prompt-chip" onclick="sendQuick(this.textContent)">SDG 6 clean water</span>
+          <span class="prompt-chip" onclick="sendQuick(this.textContent)">SDG 15 life on land</span>
+          <span class="prompt-chip" onclick="sendQuick(this.textContent)">SDG 3 good health</span>
+          <span class="prompt-chip" onclick="sendQuick(this.textContent)">SDG progress globally</span>
+        </div>
+        <!-- Climate Tab -->
+        <div class="prompt-category" id="prompts-climate">
+          <span class="prompt-chip purple" onclick="sendQuick(this.textContent)">What causes climate change?</span>
+          <span class="prompt-chip purple" onclick="sendQuick(this.textContent)">Explain greenhouse gases</span>
+          <span class="prompt-chip purple" onclick="sendQuick(this.textContent)">Effects of global warming</span>
+          <span class="prompt-chip purple" onclick="sendQuick(this.textContent)">What is the Paris Agreement?</span>
+          <span class="prompt-chip purple" onclick="sendQuick(this.textContent)">Best renewable energy sources</span>
+          <span class="prompt-chip purple" onclick="sendQuick(this.textContent)">Biodiversity and ecosystems</span>
+          <span class="prompt-chip purple" onclick="sendQuick(this.textContent)">Carbon footprint reduction tips</span>
+          <span class="prompt-chip purple" onclick="sendQuick(this.textContent)">Ocean and climate connection</span>
+        </div>
+        <!-- Game Tab -->
+        <div class="prompt-category" id="prompts-game">
+          <span class="prompt-chip green" onclick="sendQuick(this.textContent)">How do I increase green score?</span>
+          <span class="prompt-chip green" onclick="sendQuick(this.textContent)">How to reduce city pollution?</span>
+          <span class="prompt-chip green" onclick="sendQuick(this.textContent)">Best elements for Level 1</span>
+          <span class="prompt-chip green" onclick="sendQuick(this.textContent)">How does energy scoring work?</span>
+          <span class="prompt-chip green" onclick="sendQuick(this.textContent)">How to unlock next level?</span>
+          <span class="prompt-chip green" onclick="sendQuick(this.textContent)">What is High Green result?</span>
+          <span class="prompt-chip green" onclick="sendQuick(this.textContent)">Best grid layout strategy</span>
+          <span class="prompt-chip green" onclick="sendQuick(this.textContent)">Guide me from Level 1 to 10</span>
+        </div>
+        <!-- All Tab -->
+        <div class="prompt-category" id="prompts-all">
+          <span class="prompt-chip" onclick="sendQuick(this.textContent)">What are the SDGs?</span>
+          <span class="prompt-chip purple" onclick="sendQuick(this.textContent)">Climate change explained</span>
+          <span class="prompt-chip green" onclick="sendQuick(this.textContent)">How to play NeoCity?</span>
+          <span class="prompt-chip yellow" onclick="sendQuick(this.textContent)">Green city planning tips</span>
+          <span class="prompt-chip" onclick="sendQuick(this.textContent)">SDG 11 sustainable cities</span>
+          <span class="prompt-chip purple" onclick="sendQuick(this.textContent)">Net zero and carbon neutral</span>
+          <span class="prompt-chip green" onclick="sendQuick(this.textContent)">Improve eco score fast</span>
+          <span class="prompt-chip yellow" onclick="sendQuick(this.textContent)">What is COP climate summit?</span>
+        </div>
+      </div>
+
+      <!-- Character count hint -->
+      <div class="chat-char-hint" id="char-hint"></div>
+
+      <!-- Input Row -->
+      <div class="chat-input-row">
+        <input
+          class="chat-input"
+          id="chat-input"
+          type="text"
+          placeholder="Ask about SDGs, climate, or how to play NeoCity..."
+          maxlength="400"
+          onkeydown="if(event.key==='Enter')sendMessage()"
+          oninput="updateCharHint(this.value)"
+        />
+        <button class="chat-send-btn" id="send-btn" onclick="sendMessage()" title="Send">
+          <svg viewBox="0 0 18 18"><path d="M2 9l14-7-6 7 6 7z"/></svg>
+        </button>
+      </div>
+    </div><!-- /chat-container -->
+
+  </div><!-- /ask-section -->
+
+</div><!-- /wrapper -->
+
+<script>
+/* ════════════════════════════════════════════════════
+   USER CONTEXT
+════════════════════════════════════════════════════ */
+const displayName = (sessionStorage.getItem('nc_user') || 'Commander').trim();
+document.getElementById('hero-username').textContent = displayName;
+
+function getUnlockedLevel() {
+  return parseInt(sessionStorage.getItem('nc_level') || '1', 10);
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('nc_history') || '{}'); } catch(e) { return {}; }
+}
+
+/* ════════════════════════════════════════════════════
+   NEOBOT SYSTEM PROMPT — ALL SDGs + CLIMATE + GAME
+════════════════════════════════════════════════════ */
+const NEOBOT_SYSTEM = `You are NeoBot, the AI intelligence of NeoCity — a sustainable city-building game. The player's name is "${displayName}". Address them by name naturally (not every message, but in greetings and when giving personal advice).
+
+== YOUR KNOWLEDGE DOMAINS ==
+
+[1] ALL 17 UN SUSTAINABLE DEVELOPMENT GOALS (SDGs) — adopted 2015, part of the 2030 Agenda:
+SDG 1 – No Poverty: End poverty in all forms everywhere.
+SDG 2 – Zero Hunger: End hunger, achieve food security and improved nutrition, promote sustainable agriculture.
+SDG 3 – Good Health and Well-being: Ensure healthy lives and promote well-being for all at all ages.
+SDG 4 – Quality Education: Ensure inclusive and equitable quality education and lifelong learning opportunities.
+SDG 5 – Gender Equality: Achieve gender equality and empower all women and girls.
+SDG 6 – Clean Water and Sanitation: Ensure availability and sustainable management of water and sanitation for all.
+SDG 7 – Affordable and Clean Energy: Ensure access to affordable, reliable, sustainable and modern energy for all.
+SDG 8 – Decent Work and Economic Growth: Promote sustained, inclusive and sustainable economic growth, full and productive employment and decent work.
+SDG 9 – Industry, Innovation and Infrastructure: Build resilient infrastructure, promote inclusive and sustainable industrialization, foster innovation.
+SDG 10 – Reduced Inequalities: Reduce inequality within and among countries.
+SDG 11 – Sustainable Cities and Communities: Make cities and human settlements inclusive, safe, resilient and sustainable.
+SDG 12 – Responsible Consumption and Production: Ensure sustainable consumption and production patterns.
+SDG 13 – Climate Action: Take urgent action to combat climate change and its impacts.
+SDG 14 – Life Below Water: Conserve and sustainably use the oceans, seas and marine resources.
+SDG 15 – Life on Land: Protect, restore and promote sustainable use of terrestrial ecosystems, forests, wetlands, and biodiversity.
+SDG 16 – Peace, Justice and Strong Institutions: Promote peaceful and inclusive societies, provide access to justice, build effective and accountable institutions.
+SDG 17 – Partnerships for the Goals: Strengthen the means of implementation and revitalize the global partnership for sustainable development.
+
+[2] CLIMATE CHANGE & ENVIRONMENT:
+- Causes of climate change: greenhouse gases (CO₂, CH₄, N₂O, F-gases), deforestation, fossil fuels, agriculture, industry.
+- Effects: rising temperatures, sea-level rise, extreme weather events, ice melt, ocean acidification, biodiversity loss, droughts and floods.
+- Solutions: renewable energy (solar, wind, hydro, tidal, geothermal), carbon capture, reforestation, sustainable transport, circular economy, sustainable agriculture.
+- Key agreements: Paris Agreement (1.5°C target), Kyoto Protocol, COP summits, IPCC reports.
+- Carbon concepts: carbon footprint, net zero, carbon neutrality, carbon offsetting, Scope 1/2/3 emissions.
+- Ecosystems: forests, oceans, wetlands, grasslands, tundra — roles in carbon cycle, biodiversity.
+- Biodiversity: habitat loss, invasive species, extinction rates, conservation strategies.
+- Circular economy: reduce, reuse, recycle, upcycle — minimizing waste and emissions.
+- Renewable energy: solar PV, wind turbines, hydropower, tidal, geothermal, hydrogen — pros and cons of each.
+- Green buildings: LEED certification, passive design, insulation, smart meters, rooftop gardens.
+- Sustainable transport: EVs, public transit, cycling infrastructure, walkable cities, hyperloop.
+- Water sustainability: conservation, desalination, wetland protection, water recycling.
+- Sustainable agriculture: organic farming, permaculture, vertical farming, reduced pesticide use.
+- Urban heat island effect and mitigation with green spaces.
+
+[3] NEOCITY GAME — HOW TO PLAY & WIN:
+NeoCity is a 10-level city-building game. Each level has a growing grid. Your goal: build a city that is green, low-pollution, energy-sufficient, and dense.
+
+LEVELS (grid size):
+LV.1 Seedling Village (6×5) → LV.2 Sprout Township (7×6) → LV.3 Grove Small City (8×7) → LV.4 Canopy Urban Core (9×7) → LV.5 Nexus Metropolis (10×8) → LV.6 Arcadia Smart City (11×8) → LV.7 Pinnacle Eco Capital (12×9) → LV.8 Zenith Megacity (13×9) → LV.9 Apex Supercity (14×10) → LV.10 Utopia Neocity Prime (16×12)
+
+ELEMENTS UNLOCKED PER LEVEL:
+Lv.1: 🏠 House, 🛣️ Road, 🌳 Park, 🏥 Hospital, 🏫 School, ☀️ Solar Panel, 🏭 Factory
+Lv.2: 🌬️ Windmill, 🏪 Market, 🌷 Garden, 🚲 Bike Lane
+Lv.3: ♻️ Recycle Centre, ⚡ EV Station, 🚇 Subway, 🌿 Greenhouse
+Lv.4: 🏡 Smart House, 💧 Water Plant, 🌞 Solar Farm
+Lv.5: 🏛️ Arcology, 🚄 Hyperloop
+Lv.6: 🖥️ Data Centre, 🌊 Tidal Plant, 🌱 Rooftop Garden
+Lv.7: 🌾 Vertical Farm, 🚅 Maglev Rail, 🌏 Bio Dome
+Lv.8: ⚛️ Fusion Plant, 🌉 Sky Bridge, 💨 Carbon Capture
+Lv.9: 🛰️ Space Solar Array, 🤖 AI City Hub
+Lv.10: 🏢 Eco Tower, 🏞️ Utopia Park
+
+SCORING:
+- 🟢 GREEN SCORE: +Parks, Gardens, Solar, Windmill, Trees, Green Buildings. −Factories, heavy traffic.
+- 💨 POLLUTION: +Factories, Roads, Vehicles. −Parks, Recycle Centre, EVs, Subway, Carbon Capture.
+- ⚡ ENERGY: +Solar, Wind, Tidal, Fusion. −Hospitals, Schools, Data Centres.
+- 🏘️ DENSITY: +Houses, Markets, Subways, Arcologies.
+- Every 1,000 trees = +2 green, −1 pollution. Every 10,000 vehicles = +3 pollution, −1 green.
+
+RESULTS:
+- 🏆 HIGH GREEN: Green ≥ 65% AND Pollution ≤ 30% → Unlocks next level
+- ⚠️ MODERATE: Green ≥ 35% AND Pollution ≤ 55% → Partial pass
+- 🔴 POLLUTED: Failed — retry required
+
+WINNING STRATEGY (general):
+1. Always start by placing Solar Panels or Windmills for energy before factories.
+2. For every Factory, place 2 Parks or a Recycle Centre nearby to offset pollution.
+3. Use Subways and Bike Lanes to reduce vehicle traffic and pollution.
+4. Dense housing (Houses + Arcologies) with clean energy = highest score.
+5. Never place too many Roads without corresponding green offsets.
+6. Smart Houses (Lv.4+) give better density without as much pollution as regular houses.
+7. Carbon Capture (Lv.8) is the strongest single pollution reducer in the game.
+
+== RESPONSE STYLE ==
+- Be warm, encouraging, and knowledgeable.
+- For SDG/climate questions: give clear, factual, educational answers. Use examples from the real world.
+- For game questions: be tactical and specific. Use bullet points for tips.
+- Use **bold** for key terms and emphasis.
+- Keep responses concise (under 160 words) unless a full explanation is requested.
+- Always connect game concepts back to real-world SDG/climate principles when relevant.
+- If asked about things outside your domains, politely redirect: "That's outside my expertise — I specialize in SDGs, climate science, and NeoCity strategy!"`;
+
+/* ════════════════════════════════════════════════════
+   SDG STRIP
+════════════════════════════════════════════════════ */
+const SDG_LIST = [
+  {num:1, label:'No Poverty', color:'#E5243B'},
+  {num:2, label:'Zero Hunger', color:'#DDA63A'},
+  {num:3, label:'Good Health', color:'#4C9F38'},
+  {num:4, label:'Quality Edu', color:'#C5192D'},
+  {num:5, label:'Gender Eq.', color:'#FF3A21'},
+  {num:6, label:'Clean Water', color:'#26BDE2'},
+  {num:7, label:'Clean Energy', color:'#FCC30B'},
+  {num:8, label:'Decent Work', color:'#A21942'},
+  {num:9, label:'Innovation', color:'#FD6925'},
+  {num:10, label:'Reduced Ineq', color:'#DD1367'},
+  {num:11, label:'Cities', color:'#FD9D24'},
+  {num:12, label:'Consumption', color:'#BF8B2E'},
+  {num:13, label:'Climate', color:'#3F7E44'},
+  {num:14, label:'Life Water', color:'#0A97D9'},
+  {num:15, label:'Life Land', color:'#56C02B'},
+  {num:16, label:'Peace', color:'#00689D'},
+  {num:17, label:'Partnerships', color:'#19486A'},
+];
+
+function buildSdgStrip() {
+  const strip = document.getElementById('sdg-strip');
+  SDG_LIST.forEach(s => {
+    const pill = document.createElement('span');
+    pill.className = 'sdg-pill';
+    pill.textContent = `SDG ${s.num} ${s.label}`;
+    pill.style.cssText = `border-color:${s.color}44;background:${s.color}12;color:${s.color}`;
+    pill.onclick = () => {
+      openChat('sdg');
+      setTimeout(() => sendQuick(`Tell me about SDG ${s.num}: ${s.label}`), 300);
+    };
+    strip.appendChild(pill);
+  });
+}
+buildSdgStrip();
+
+/* ════════════════════════════════════════════════════
+   PARTICLES
+════════════════════════════════════════════════════ */
+(function(){
+  const container = document.getElementById('particles');
+  const colors = ['rgba(0,229,255,.5)','rgba(0,255,136,.4)','rgba(255,230,0,.35)'];
+  for(let i=0;i<18;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random()*2.5+1;
+    p.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${Math.random()*100}%;bottom:${Math.random()*20}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${Math.random()*18+8}s;
+      animation-delay:-${Math.random()*18}s;
+    `;
+    container.appendChild(p);
+  }
+})();
+
+/* ════════════════════════════════════════════════════
+   CHAT STATE
+════════════════════════════════════════════════════ */
+let chatActive = false;
+let chatHistory = [];
+let currentTab = 'sdg';
+let isTyping = false;
+
+/* Open Chat */
+function openChat(tab) {
+  chatActive = true;
+  document.getElementById('ask-cta').style.display = 'none';
+  const container = document.getElementById('chat-container');
+  container.classList.add('open');
+  switchTab(tab || 'sdg');
+
+  if (chatHistory.length === 0) {
+    const unlocked = getUnlockedLevel();
+    const history = getHistory();
+    const completed = Object.values(history).length;
+    const levelNames = ['Seedling','Sprout','Grove','Canopy','Nexus','Arcadia','Pinnacle','Zenith','Apex','Utopia'];
+    const lvName = levelNames[Math.min(unlocked - 1, 9)];
+
+    const greeting = completed > 0
+      ? `Hello, **${displayName}**! 🌱 I've reviewed your mission records — you've completed **${completed}** level${completed > 1?'s':''} and you're currently at **LV.${unlocked} — ${lvName}**.\n\nI can help you with:\n• All **17 UN SDGs** and their real-world targets\n• **Climate change**, carbon cycles, and eco science\n• **NeoCity strategy** — how to build the greenest city possible\n\nWhat would you like to explore today?`
+      : `Hello, **${displayName}**! 🌱 Welcome to NeoBot AI — I'm your guide for sustainable city building and global climate knowledge.\n\nYou're about to start **LV.1 — Seedling Village**. I can help you with:\n• All **17 UN SDGs** explained clearly\n• **Climate science** and environmental topics\n• **How to play NeoCity** and build a green city\n\nAsk me anything — what's on your mind?`;
+
+    addBotMessage(greeting);
+  }
+
+  setTimeout(() => {
+    document.getElementById('chat-messages').scrollTop = 99999;
+    document.getElementById('chat-input').focus();
+  }, 100);
+}
+
+/* Close Chat (back to CTA) */
+function closeChat() {
+  chatActive = false;
+  document.getElementById('chat-container').classList.remove('open');
+  document.getElementById('ask-cta').style.display = '';
+  document.getElementById('ask-cta').style.display = 'block';
+}
+
+/* Clear Chat */
+function clearChat() {
+  if (!confirm('Clear conversation history with NeoBot?')) return;
+  chatHistory = [];
+  document.getElementById('chat-messages').innerHTML = '';
+  addBotMessage(`Chat cleared. Hello again, **${displayName}**! What can I help you with — SDGs, climate science, or NeoCity strategy?`);
+}
+
+/* Switch tab */
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.prompt-category').forEach(p => p.classList.remove('visible'));
+  const prompts = document.getElementById('prompts-' + tab);
+  if (prompts) prompts.classList.add('visible');
+}
+
+/* ════════════════════════════════════════════════════
+   MESSAGES
+════════════════════════════════════════════════════ */
+function addBotMessage(text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.innerHTML = `
+    <div class="msg-avatar bot-av">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M8 14c-4 1-6 3-6 5h20c0-2-2-4-6-5" stroke-linecap="round"/></svg>
+    </div>
+    <div>
+      <div class="msg-bubble bot-bubble">${formatMsg(text)}</div>
+      <div class="msg-time bot-msg">${getTimestamp()}</div>
+    </div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUserMessage(text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg user';
+  div.innerHTML = `
+    <div class="msg-avatar user-av">🧑</div>
+    <div>
+      <div class="msg-bubble user-bubble">${escapeHtml(text)}</div>
+      <div class="msg-time" style="text-align:right">${getTimestamp()}</div>
+    </div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  div.id = 'typing-indicator';
+  div.innerHTML = `
+    <div class="msg-avatar bot-av">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/></svg>
+    </div>
+    <div class="msg-bubble bot-bubble">
+      <div class="typing-indicator">
+        <div class="ty-dot"></div><div class="ty-dot"></div><div class="ty-dot"></div>
+      </div>
+    </div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function formatMsg(text) {
+  return text
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/_(.*?)_/g, '<em>$1</em>')
+    .replace(/•\s?(.*?)(\n|$)/g, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, (m) => `<ul style="margin:.35rem 0 .35rem 1rem;display:flex;flex-direction:column;gap:2px">${m}</ul>`)
+    .replace(/\n/g, '<br/>');
+}
+
+function escapeHtml(text) {
+  return text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function getTimestamp() {
+  return new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+
+/* ════════════════════════════════════════════════════
+   SEND MESSAGE
+════════════════════════════════════════════════════ */
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg || isTyping) return;
+  input.value = '';
+  updateCharHint('');
+  sendToNeobot(msg);
+}
+
+function sendQuick(text) {
+  if (isTyping) return;
+  if (!chatActive) openChat(currentTab);
+  setTimeout(() => sendToNeobot(text), chatActive ? 0 : 400);
+}
+
+function sendToNeobot(text) {
+  if (!chatActive) openChat(currentTab);
+  addUserMessage(text);
+  chatHistory.push({role:'user', content: text});
+  isTyping = true;
+  document.getElementById('send-btn').disabled = true;
+
+  // Build context
+  const unlocked = getUnlockedLevel();
+  const history = getHistory();
+  const histSummary = Object.values(history).map(r =>
+    `Level ${r.level}: Green ${r.green}%, Pollution ${r.pollute}%, Energy ${r.energy}%, result: ${r.result}`
+  ).join('\n') || 'No completed levels yet.';
+
+  // Keep last 8 messages for context
+  const recentHistory = chatHistory.slice(-8);
+
+  // Inject player context into the last user message
+  const messagesWithContext = recentHistory.map((m, i) => {
+    if (i === recentHistory.length - 1 && m.role === 'user') {
+      return {
+        role: 'user',
+        content: `[Player: ${displayName} | Level unlocked: ${unlocked} | History: ${histSummary}]\n\n${m.content}`
+      };
+    }
+    return m;
+  });
+
+  const typingEl = showTyping();
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: NEOBOT_SYSTEM,
+      messages: messagesWithContext,
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    typingEl.remove();
+    const reply = data.content?.map(c => c.text || '').filter(Boolean).join('') ||
+      `I encountered an issue processing that, ${displayName}. Could you rephrase your question?`;
+    chatHistory.push({role:'assistant', content: reply});
+    addBotMessage(reply);
+  })
+  .catch(() => {
+    typingEl.remove();
+    addBotMessage(`⚠️ Connection interrupted, ${displayName}. Check your network and try again.`);
+  })
+  .finally(() => {
+    isTyping = false;
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('chat-input').focus();
+  });
+}
+
+/* ════════════════════════════════════════════════════
+   UTILS
+════════════════════════════════════════════════════ */
+function updateCharHint(val) {
+  const hint = document.getElementById('char-hint');
+  hint.textContent = val.length > 0 ? `${val.length}/400` : '';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* Keyboard: Escape to close */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && chatActive) closeChat();
+});
+
+/* Auto-open if arriving from history page (via ?open=1 URL param or referrer) */
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const fromHistory = params.get('open') === '1' || document.referrer.includes('neocity-history');
+  if (fromHistory) {
+    setTimeout(() => openChat('sdg'), 700);
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NeoCity — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --neon-green: #00ff88;
+    --neon-cyan: #00e5ff;
+    --neon-yellow: #ffe600;
+    --city-dark: #04080f;
+    --city-panel: rgba(6, 20, 38, 0.92);
+    --city-border: rgba(0, 229, 255, 0.18);
+    --text-bright: #e8f4ff;
+    --text-muted: rgba(180, 210, 240, 0.55);
+    --input-bg: rgba(0, 20, 45, 0.7);
+    --glow-green: 0 0 18px rgba(0,255,136,0.35), 0 0 40px rgba(0,255,136,0.12);
+    --glow-cyan: 0 0 18px rgba(0,229,255,0.35), 0 0 40px rgba(0,229,255,0.12);
+  }
+
+  html, body { height: 100%; font-family: 'Exo 2', sans-serif; background: var(--city-dark); color: var(--text-bright); overflow-x: hidden; }
+
+  /* SCENE */
+  .scene { position: fixed; inset: 0; overflow: hidden; z-index: 0; }
+  .sky { position: absolute; inset: 0; background: linear-gradient(180deg,#000408 0%,#020c1a 35%,#031a2e 60%,#041f38 80%,#051525 100%); }
+  .stars { position: absolute; inset: 0; }
+  .stars::before, .stars::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(1px 1px at 10% 15%,rgba(255,255,255,0.8) 0%,transparent 100%),radial-gradient(1px 1px at 25% 8%,rgba(255,255,255,0.6) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 40% 20%,rgba(255,255,255,0.9) 0%,transparent 100%),radial-gradient(1px 1px at 55% 5%,rgba(255,255,255,0.7) 0%,transparent 100%),radial-gradient(1px 1px at 70% 18%,rgba(255,255,255,0.5) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 85% 10%,rgba(255,255,255,0.8) 0%,transparent 100%),radial-gradient(1px 1px at 92% 25%,rgba(255,255,255,0.6) 0%,transparent 100%),radial-gradient(1px 1px at 15% 35%,rgba(255,255,255,0.4) 0%,transparent 100%),radial-gradient(1px 1px at 62% 30%,rgba(255,255,255,0.7) 0%,transparent 100%),radial-gradient(1px 1px at 33% 45%,rgba(0,229,255,0.6) 0%,transparent 100%),radial-gradient(1px 1px at 48% 38%,rgba(0,255,136,0.4) 0%,transparent 100%); }
+  .stars::after { background-image: radial-gradient(1px 1px at 5% 50%,rgba(255,255,255,0.5) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 35% 12%,rgba(255,255,255,0.7) 0%,transparent 100%),radial-gradient(1px 1px at 65% 22%,rgba(255,255,255,0.6) 0%,transparent 100%),radial-gradient(1px 1px at 80% 35%,rgba(255,255,255,0.4) 0%,transparent 100%),radial-gradient(1px 1px at 95% 48%,rgba(255,255,255,0.7) 0%,transparent 100%),radial-gradient(1px 1px at 72% 15%,rgba(0,255,136,0.4) 0%,transparent 100%); animation: twinkle 4s ease-in-out infinite alternate; }
+  @keyframes twinkle { 0%{opacity:0.6} 100%{opacity:1} }
+  .cityscape { position: absolute; bottom: 0; left: 0; right: 0; width: 100%; height: 65%; }
+  .city-glow { position: absolute; bottom: 55%; left: 50%; transform: translateX(-50%); width: 90%; height: 120px; background: radial-gradient(ellipse at center,rgba(0,229,255,0.08) 0%,rgba(0,255,136,0.04) 40%,transparent 70%); filter: blur(30px); }
+  .scanlines { position: fixed; inset: 0; background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px); pointer-events: none; z-index: 1; }
+  .vignette { position: fixed; inset: 0; background: radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.7) 100%); pointer-events: none; z-index: 1; }
+  .particles { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+  .particle { position: absolute; border-radius: 50%; animation: float-up linear infinite; opacity: 0; }
+  @keyframes float-up { 0%{transform:translateY(0) translateX(0);opacity:0} 10%{opacity:1} 90%{opacity:0.4} 100%{transform:translateY(-100vh) translateX(40px);opacity:0} }
+
+  /* PAGE LAYERS */
+  .page { position: relative; z-index: 10; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+
+  /* PANEL */
+  .panel { width: 100%; max-width: 440px; background: var(--city-panel); border: 1px solid var(--city-border); border-radius: 2px; position: relative; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); overflow: hidden; }
+  .panel::before, .panel::after { content: ''; position: absolute; width: 20px; height: 20px; border-color: var(--neon-green); border-style: solid; z-index: 2; }
+  .panel::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .panel::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+  .corner-tr, .corner-bl { position: absolute; width: 14px; height: 14px; border-color: rgba(0,229,255,0.4); border-style: solid; z-index: 2; }
+  .corner-tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+  .corner-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+  .panel-accent-top { height: 3px; background: linear-gradient(90deg,transparent 0%,var(--neon-cyan) 20%,var(--neon-green) 50%,var(--neon-cyan) 80%,transparent 100%); animation: scan-bar 3s ease-in-out infinite alternate; }
+  @keyframes scan-bar { 0%{opacity:0.6} 100%{opacity:1;box-shadow:0 0 12px var(--neon-cyan),0 0 24px rgba(0,229,255,0.3)} }
+  .panel-body { padding: 1.6rem 1.8rem 1.8rem; }
+
+  @media (max-width: 480px) {
+    .panel-body { padding: 1.2rem 1.2rem 1.5rem; }
+    .page { padding: 0.5rem; align-items: flex-start; padding-top: 1rem; }
+  }
+
+  /* LOGO */
+  .logo-wrap { text-align: center; margin-bottom: 1.4rem; animation: fade-down 0.6s 0.2s cubic-bezier(0.16,1,0.3,1) both; }
+  @keyframes fade-down { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
+  .logo-icon { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border: 1.5px solid var(--neon-green); border-radius: 2px; margin-bottom: 0.7rem; box-shadow: var(--glow-green); }
+  .logo-icon svg { width: 26px; height: 26px; }
+  .logo-name { font-family: 'Orbitron', monospace; font-size: 1.65rem; font-weight: 900; letter-spacing: 0.18em; color: var(--text-bright); text-shadow: 0 0 20px rgba(0,255,136,0.4); line-height: 1; }
+  .logo-name span { color: var(--neon-green); text-shadow: var(--glow-green); }
+  .logo-tagline { font-size: 0.6rem; letter-spacing: 0.28em; color: var(--text-muted); text-transform: uppercase; margin-top: 0.3rem; font-weight: 300; }
+
+  /* TABS */
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--city-border); border-radius: 2px; overflow: hidden; margin-bottom: 1.4rem; animation: fade-down 0.6s 0.3s both; }
+  .tab-btn { background: transparent; border: none; padding: 0.6rem 1rem; font-family: 'Orbitron', monospace; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; color: var(--text-muted); cursor: pointer; transition: all 0.25s; position: relative; text-transform: uppercase; }
+  .tab-btn.active { background: rgba(0,255,136,0.08); color: var(--neon-green); text-shadow: 0 0 10px rgba(0,255,136,0.5); }
+  .tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+  .tab-btn:not(.active):hover { color: var(--text-bright); background: rgba(255,255,255,0.03); }
+
+  /* FORM SECTIONS */
+  .form-section { display: none; }
+  .form-section.active { display: block; animation: section-in 0.3s ease; }
+  @keyframes section-in { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+
+  /* FIELD */
+  .field { margin-bottom: 0.9rem; animation: fade-down 0.5s 0.4s both; }
+  .field:nth-child(2){animation-delay:0.5s} .field:nth-child(3){animation-delay:0.6s}
+  .field-label { display: block; font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 500; }
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  .input-icon { position: absolute; left: 12px; color: rgba(0,229,255,0.5); pointer-events: none; line-height: 0; }
+  .input-icon svg { width: 15px; height: 15px; }
+  .field input { width: 100%; background: var(--input-bg); border: 1px solid var(--city-border); border-radius: 2px; padding: 0.65rem 1rem 0.65rem 2.4rem; font-family: 'Exo 2', sans-serif; font-size: 0.88rem; color: var(--text-bright); outline: none; transition: border-color 0.2s,box-shadow 0.2s,background 0.2s; letter-spacing: 0.04em; -webkit-appearance: none; }
+  .field input::placeholder { color: rgba(180,210,240,0.25); font-weight: 300; }
+  .field input:focus { border-color: rgba(0,229,255,0.5); background: rgba(0,30,60,0.8); box-shadow: var(--glow-cyan); }
+  .pw-toggle { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: rgba(180,210,240,0.4); padding: 4px; line-height: 0; transition: color 0.2s; touch-action: manipulation; }
+  .pw-toggle:hover { color: var(--neon-cyan); }
+  .pw-toggle svg { width: 16px; height: 16px; }
+
+  /* METHOD TOGGLE */
+  .method-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0.9rem; animation: fade-down 0.5s 0.35s both; }
+  .method-btn { background: var(--input-bg); border: 1px solid var(--city-border); border-radius: 2px; padding: 0.5rem; font-family: 'Exo 2', sans-serif; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--text-muted); cursor: pointer; transition: all 0.22s; display: flex; align-items: center; justify-content: center; gap: 6px; touch-action: manipulation; }
+  .method-btn svg { width: 14px; height: 14px; }
+  .method-btn.active { border-color: rgba(0,255,136,0.45); background: rgba(0,255,136,0.07); color: var(--neon-green); box-shadow: var(--glow-green); }
+  .method-btn:not(.active):hover { border-color: rgba(0,229,255,0.3); color: var(--text-bright); }
+
+  /* OTP INPUTS */
+  .otp-group { display: flex; gap: 6px; justify-content: center; margin-bottom: 0.9rem; }
+  .otp-input { width: 42px; height: 48px; background: var(--input-bg); border: 1px solid var(--city-border); border-radius: 2px; text-align: center; font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 600; color: var(--neon-green); outline: none; transition: border-color 0.2s,box-shadow 0.2s; caret-color: var(--neon-green); -webkit-appearance: none; }
+  @media (max-width: 380px) { .otp-input { width: 36px; height: 44px; font-size: 0.95rem; } .otp-group { gap: 4px; } }
+  .otp-input:focus { border-color: var(--neon-green); box-shadow: var(--glow-green); }
+  .otp-hint { font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-bottom: 0.9rem; letter-spacing: 0.04em; }
+  .otp-hint a { color: var(--neon-cyan); text-decoration: none; cursor: pointer; transition: text-shadow 0.2s; }
+  .otp-hint a:hover { text-shadow: 0 0 8px var(--neon-cyan); }
+
+  /* OPTIONS ROW */
+  .options-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.1rem; animation: fade-down 0.5s 0.65s both; flex-wrap: wrap; gap: 0.5rem; }
+  .remember-me { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+  .remember-me input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; border: 1px solid var(--city-border); border-radius: 2px; background: var(--input-bg); cursor: pointer; position: relative; transition: all 0.2s; flex-shrink: 0; }
+  .remember-me input[type="checkbox"]:checked { background: rgba(0,255,136,0.15); border-color: var(--neon-green); box-shadow: 0 0 8px rgba(0,255,136,0.3); }
+  .remember-me input[type="checkbox"]:checked::after { content: ''; position: absolute; inset: 3px; background: var(--neon-green); border-radius: 1px; }
+  .remember-me span { font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.05em; }
+  .forgot-link { font-size: 0.72rem; color: var(--neon-cyan); text-decoration: none; letter-spacing: 0.05em; transition: text-shadow 0.2s; cursor: pointer; background: none; border: none; }
+  .forgot-link:hover { text-shadow: 0 0 8px var(--neon-cyan); }
+
+  /* BUTTONS */
+  .btn-primary { width: 100%; background: transparent; border: 1.5px solid var(--neon-green); border-radius: 2px; padding: 0.74rem 1rem; font-family: 'Orbitron', monospace; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--neon-green); cursor: pointer; position: relative; overflow: hidden; transition: all 0.25s; box-shadow: var(--glow-green); animation: fade-down 0.5s 0.7s both; touch-action: manipulation; }
+  .btn-primary::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg,transparent,rgba(0,255,136,0.08),transparent); transform: translateX(-100%); transition: transform 0.4s; }
+  .btn-primary:hover::before { transform: translateX(100%); }
+  .btn-primary:hover { background: rgba(0,255,136,0.1); box-shadow: 0 0 28px rgba(0,255,136,0.5),0 0 60px rgba(0,255,136,0.2); color: #fff; text-shadow: 0 0 12px var(--neon-green); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-enter { border-color: var(--neon-cyan); color: var(--neon-cyan); box-shadow: var(--glow-cyan); font-size: 0.8rem; padding: 0.9rem 1rem; letter-spacing: 0.25em; }
+  .btn-enter:hover { background: rgba(0,229,255,0.1); box-shadow: 0 0 28px rgba(0,229,255,0.5),0 0 60px rgba(0,229,255,0.2); border-color: var(--neon-cyan); color: #fff; text-shadow: 0 0 12px var(--neon-cyan); }
+
+  /* DIVIDER */
+  .divider { display: flex; align-items: center; gap: 12px; margin: 1rem 0; animation: fade-down 0.5s 0.75s both; }
+  .divider-line { flex: 1; height: 1px; background: linear-gradient(90deg,transparent,var(--city-border),transparent); }
+  .divider-text { font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); }
+
+  /* SOCIAL */
+  .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; animation: fade-down 0.5s 0.8s both; }
+  .btn-social { background: var(--input-bg); border: 1px solid var(--city-border); border-radius: 2px; padding: 0.56rem; font-family: 'Exo 2', sans-serif; font-size: 0.72rem; letter-spacing: 0.06em; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; transition: all 0.22s; touch-action: manipulation; }
+  .btn-social svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .btn-social:hover { border-color: rgba(0,229,255,0.4); color: var(--text-bright); background: rgba(0,229,255,0.06); box-shadow: 0 0 12px rgba(0,229,255,0.15); }
+
+  /* FOOTER */
+  .panel-footer { text-align: center; padding: 0.5rem 0 0; font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.04em; animation: fade-down 0.5s 0.85s both; }
+  .panel-footer a { color: var(--neon-cyan); text-decoration: none; cursor: pointer; transition: text-shadow 0.2s; }
+  .panel-footer a:hover { text-shadow: 0 0 8px var(--neon-cyan); }
+
+  /* STATUS BAR */
+  .status-bar { display: flex; align-items: center; gap: 8px; margin-top: 0.9rem; padding: 0.42rem 0.7rem; border: 1px solid rgba(0,255,136,0.15); border-radius: 2px; background: rgba(0,255,136,0.04); animation: fade-down 0.5s 0.9s both; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); animation: pulse-dot 2s ease-in-out infinite; flex-shrink: 0; }
+  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .status-text { font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(0,255,136,0.7); }
+  .status-version { margin-left: auto; font-family: 'Orbitron', monospace; font-size: 0.54rem; color: var(--text-muted); letter-spacing: 0.1em; }
+
+  /* OTP STEP */
+  .otp-step { display: none; }
+  .otp-step.active { display: block; animation: section-in 0.3s ease; }
+
+  /* TOAST */
+  .toast { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%) translateY(-80px); background: rgba(4,20,40,0.95); border: 1px solid rgba(0,229,255,0.3); border-radius: 2px; padding: 0.5rem 1.1rem; font-size: 0.72rem; color: var(--neon-cyan); letter-spacing: 0.08em; transition: transform 0.4s cubic-bezier(0.16,1,0.3,1); z-index: 200; white-space: nowrap; box-shadow: 0 0 20px rgba(0,229,255,0.2); max-width: calc(100vw - 2rem); overflow: hidden; text-overflow: ellipsis; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* FIELD ERROR */
+  .field-error { font-size: 0.6rem; color: #ff4d6d; letter-spacing: 0.06em; margin-top: 4px; display: none; }
+  .field-error.visible { display: block; }
+
+  /* ── OVERLAY SCREENS ── */
+  .overlay-screen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: var(--city-panel);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.8rem;
+    text-align: center;
+    z-index: 20;
+    animation: section-in 0.4s ease;
+    overflow-y: auto;
+  }
+  .overlay-screen.active { display: flex; }
+
+  /* REGISTRATION SUCCESS */
+  .reg-success-icon {
+    width: 68px; height: 68px;
+    border: 2px solid var(--neon-green);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.2rem;
+    box-shadow: var(--glow-green);
+    animation: pop-in 0.5s cubic-bezier(0.16,1,0.3,1) both;
+    flex-shrink: 0;
+  }
+  @keyframes pop-in { from{opacity:0;transform:scale(0.6)} to{opacity:1;transform:scale(1)} }
+  .reg-success-icon svg { width: 32px; height: 32px; stroke: var(--neon-green); }
+
+  .reg-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    color: var(--neon-green);
+    text-shadow: var(--glow-green);
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+  }
+  .reg-subtitle {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+  }
+  .reg-commander {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--neon-cyan);
+    letter-spacing: 0.1em;
+    margin-bottom: 1.4rem;
+    text-shadow: var(--glow-cyan);
+  }
+
+  /* Countdown ring */
+  .countdown-wrap {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 1.4rem;
+  }
+  .countdown-ring { position: relative; width: 40px; height: 40px; }
+  .countdown-ring svg { transform: rotate(-90deg); }
+  .countdown-ring .ring-bg { fill: none; stroke: rgba(0,255,136,0.1); stroke-width: 3; }
+  .countdown-ring .ring-fill { fill: none; stroke: var(--neon-green); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 110; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; }
+  .countdown-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--neon-green); }
+  .countdown-label { font-size: 0.66rem; color: var(--text-muted); letter-spacing: 0.1em; }
+
+  .reg-divider { width: 100%; height: 1px; background: linear-gradient(90deg,transparent,var(--city-border),transparent); margin-bottom: 1.2rem; }
+
+  /* LOGIN SUCCESS */
+  .login-success-wrap { width: 100%; }
+  .success-header { display: flex; align-items: center; gap: 14px; margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--city-border); }
+  .success-avatar { width: 50px; height: 50px; border: 1.5px solid var(--neon-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: var(--glow-green); font-family: 'Orbitron', monospace; font-size: 0.95rem; font-weight: 700; color: var(--neon-green); background: rgba(0,255,136,0.06); }
+  .success-user-info { text-align: left; min-width: 0; }
+  .success-greeting { font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; }
+  .success-name { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-bright); letter-spacing: 0.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .success-role { font-size: 0.68rem; color: var(--neon-cyan); letter-spacing: 0.06em; margin-top: 2px; }
+
+  .city-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-bottom: 1.2rem; }
+  .stat-card { background: rgba(0,20,45,0.5); border: 1px solid var(--city-border); border-radius: 2px; padding: 0.6rem 0.4rem; text-align: center; }
+  .stat-val { font-family: 'Orbitron', monospace; font-size: 0.82rem; font-weight: 700; color: var(--neon-green); display: block; text-shadow: 0 0 8px rgba(0,255,136,0.4); }
+  .stat-lbl { font-size: 0.53rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-top: 2px; display: block; }
+
+  .last-login { font-size: 0.66rem; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 1.2rem; padding: 0.45rem 0.7rem; border: 1px solid rgba(0,229,255,0.1); border-radius: 2px; background: rgba(0,229,255,0.03); display: flex; align-items: center; gap: 8px; }
+  .last-login svg { width: 13px; height: 13px; stroke: rgba(0,229,255,0.5); flex-shrink: 0; }
+
+  /* ═══ LANDING PAGE ═══ */
+  #landing-page {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: var(--city-dark);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    animation: landing-in 0.8s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes landing-in { from{opacity:0;transform:scale(1.04)} to{opacity:1;transform:scale(1)} }
+  #landing-page.active { display: block; }
+
+  .landing-scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .landing-content { position: relative; z-index: 10; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* TOPBAR */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.5rem; border-bottom: 1px solid var(--city-border); backdrop-filter: blur(12px); background: rgba(4,8,15,0.7); position: sticky; top: 0; z-index: 10; gap: 0.75rem; }
+  .topbar-logo { font-family: 'Orbitron', monospace; font-size: 0.95rem; font-weight: 900; letter-spacing: 0.18em; color: var(--text-bright); white-space: nowrap; }
+  .topbar-logo span { color: var(--neon-green); }
+  .topbar-right { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+  .topbar-user { font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .topbar-user strong { color: var(--neon-cyan); font-weight: 600; }
+  .btn-logout { background: none; border: 1px solid rgba(0,229,255,0.2); border-radius: 2px; padding: 0.28rem 0.65rem; font-family: 'Exo 2', sans-serif; font-size: 0.63rem; letter-spacing: 0.1em; color: var(--text-muted); cursor: pointer; transition: all 0.2s; text-transform: uppercase; white-space: nowrap; touch-action: manipulation; }
+  .btn-logout:hover { border-color: rgba(0,229,255,0.5); color: var(--neon-cyan); }
+
+  /* HERO */
+  .landing-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem 1.5rem 1.5rem; text-align: center; }
+  .hero-eyebrow { font-size: 0.6rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--neon-cyan); margin-bottom: 0.9rem; display: flex; align-items: center; gap: 10px; }
+  .hero-eyebrow::before, .hero-eyebrow::after { content: ''; flex: 1; max-width: 60px; height: 1px; background: rgba(0,229,255,0.3); }
+  .hero-title { font-family: 'Orbitron', monospace; font-size: clamp(1.6rem, 5vw, 3rem); font-weight: 900; letter-spacing: 0.08em; line-height: 1.15; margin-bottom: 0.75rem; }
+  .hero-title .line1 { display: block; color: var(--text-bright); }
+  .hero-title .line2 { display: block; color: var(--neon-green); text-shadow: var(--glow-green); }
+  .hero-desc { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.05em; line-height: 1.7; max-width: 480px; margin-bottom: 2rem; }
+
+  /* CITY CARD GRID */
+  .city-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; width: 100%; max-width: 780px; margin: 0 auto 2rem; }
+  @media (max-width: 480px) { .city-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }
+  .city-card { background: rgba(6,20,38,0.7); border: 1px solid var(--city-border); border-radius: 2px; padding: 1.1rem 0.9rem; position: relative; overflow: hidden; cursor: pointer; transition: all 0.25s; text-align: left; }
+  .city-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; transition: background 0.3s; }
+  .city-card.green::before { background: linear-gradient(90deg,transparent,var(--neon-green),transparent); }
+  .city-card.cyan::before { background: linear-gradient(90deg,transparent,var(--neon-cyan),transparent); }
+  .city-card.yellow::before { background: linear-gradient(90deg,transparent,var(--neon-yellow),transparent); }
+  .city-card.purple::before { background: linear-gradient(90deg,transparent,#a855f7,transparent); }
+  .city-card:hover { border-color: rgba(0,229,255,0.35); background: rgba(6,24,48,0.9); transform: translateY(-2px); }
+  .city-card:active { transform: scale(0.97); }
+  .card-icon { font-size: 1.5rem; margin-bottom: 0.6rem; filter: drop-shadow(0 0 6px rgba(0,255,136,0.4)); }
+  .card-title { font-family: 'Orbitron', monospace; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-bright); margin-bottom: 0.3rem; text-transform: uppercase; }
+  .card-desc { font-size: 0.67rem; color: var(--text-muted); letter-spacing: 0.03em; line-height: 1.5; }
+  .card-badge { position: absolute; top: 0.6rem; right: 0.6rem; font-family: 'Orbitron', monospace; font-size: 0.48rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 5px; border-radius: 2px; background: rgba(0,255,136,0.12); color: var(--neon-green); border: 1px solid rgba(0,255,136,0.2); }
+
+  /* BOTTOM BAR */
+  .landing-bottom { padding: 1rem 1.5rem; border-top: 1px solid var(--city-border); display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(12px); background: rgba(4,8,15,0.7); flex-wrap: wrap; gap: 0.75rem; }
+  .bottom-stats { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  .b-stat { text-align: center; }
+  .b-stat-val { font-family: 'Orbitron', monospace; font-size: 0.82rem; font-weight: 700; color: var(--neon-green); display: block; }
+  .b-stat-lbl { font-size: 0.52rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+  .bottom-right { display: flex; align-items: center; gap: 8px; }
+  .online-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); animation: pulse-dot 2s infinite; }
+  .online-text { font-size: 0.62rem; letter-spacing: 0.1em; color: rgba(0,255,136,0.7); text-transform: uppercase; }
+
+  @media (max-width: 480px) {
+    .topbar-user { display: none; }
+    .landing-bottom { justify-content: center; }
+    .bottom-right { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- SCENE -->
+<div class="scene">
+  <div class="sky"></div>
+  <div class="stars"></div>
+  <div class="city-glow"></div>
+  <svg class="cityscape" viewBox="0 0 1440 600" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a2040"/><stop offset="100%" stop-color="#020810"/></linearGradient>
+      <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#051828"/><stop offset="100%" stop-color="#010508"/></linearGradient>
+      <linearGradient id="gnd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d2240"/><stop offset="100%" stop-color="#000307"/></linearGradient>
+    </defs>
+    <rect x="0" y="520" width="1440" height="80" fill="url(#gnd)"/>
+    <ellipse cx="720" cy="525" rx="600" ry="20" fill="rgba(0,229,255,0.06)"/>
+    <g fill="url(#bg2)" opacity="0.6">
+      <rect x="0" y="300" width="80" height="220"/><rect x="70" y="350" width="50" height="170"/><rect x="110" y="270" width="70" height="250"/>
+      <rect x="200" y="310" width="60" height="210"/><rect x="250" y="330" width="90" height="190"/><rect x="330" y="280" width="55" height="240"/>
+      <rect x="800" y="290" width="80" height="230"/><rect x="870" y="340" width="60" height="180"/><rect x="920" y="270" width="90" height="250"/>
+      <rect x="1000" y="300" width="70" height="220"/><rect x="1100" y="260" width="80" height="260"/><rect x="1230" y="280" width="90" height="240"/>
+      <rect x="1310" y="330" width="60" height="190"/><rect x="1360" y="290" width="80" height="230"/>
+    </g>
+    <g fill="url(#bg1)">
+      <rect x="-10" y="200" width="100" height="320"/><rect x="80" y="240" width="75" height="280"/><rect x="145" y="180" width="90" height="340"/>
+      <rect x="225" y="220" width="65" height="300"/><rect x="275" y="160" width="110" height="360"/><rect x="370" y="200" width="80" height="320"/>
+      <rect x="950" y="190" width="100" height="330"/><rect x="1040" y="230" width="80" height="290"/><rect x="1110" y="170" width="95" height="350"/>
+      <rect x="1195" y="210" width="70" height="310"/><rect x="1255" y="155" width="115" height="365"/><rect x="1360" y="195" width="90" height="325"/>
+    </g>
+    <g fill="#06182e">
+      <rect x="660" y="80" width="120" height="440"/>
+      <polygon points="720,30 690,80 750,80"/><rect x="717" y="10" width="6" height="30"/>
+      <rect x="460" y="140" width="90" height="380"/><polygon points="505,100 478,140 532,140" fill="#051525"/>
+      <rect x="890" y="130" width="95" height="390"/><polygon points="937,90 910,130 965,130" fill="#051525"/>
+    </g>
+    <g fill="rgba(0,229,255,0.55)">
+      <rect x="10" y="215" width="8" height="5"/><rect x="25" y="215" width="8" height="5"/><rect x="40" y="215" width="8" height="5"/>
+      <rect x="10" y="228" width="8" height="5"/><rect x="40" y="241" width="8" height="5"/>
+      <rect x="155" y="195" width="8" height="5"/><rect x="170" y="195" width="8" height="5"/><rect x="185" y="195" width="8" height="5"/>
+      <rect x="960" y="205" width="8" height="5"/><rect x="975" y="205" width="8" height="5"/><rect x="990" y="205" width="8" height="5"/>
+      <rect x="1120" y="185" width="8" height="5"/><rect x="1135" y="185" width="8" height="5"/><rect x="1150" y="185" width="8" height="5"/>
+    </g>
+    <g fill="rgba(255,230,0,0.45)">
+      <rect x="285" y="175" width="8" height="5"/><rect x="300" y="175" width="8" height="5"/><rect x="315" y="175" width="8" height="5"/>
+      <rect x="285" y="188" width="8" height="5"/><rect x="300" y="201" width="8" height="5"/>
+      <rect x="1265" y="170" width="8" height="5"/><rect x="1280" y="170" width="8" height="5"/><rect x="1295" y="170" width="8" height="5"/>
+    </g>
+    <g fill="rgba(0,255,136,0.5)">
+      <rect x="672" y="95" width="10" height="6"/><rect x="690" y="95" width="10" height="6"/><rect x="708" y="95" width="10" height="6"/>
+      <rect x="726" y="95" width="10" height="6"/><rect x="744" y="95" width="10" height="6"/>
+      <rect x="672" y="110" width="10" height="6"/><rect x="726" y="110" width="10" height="6"/>
+      <rect x="690" y="125" width="10" height="6"/><rect x="708" y="125" width="10" height="6"/>
+    </g>
+    <circle cx="720" cy="12" r="3" fill="#ff2244" opacity="0.9">
+      <animate attributeName="opacity" values="0.9;0.2;0.9" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <rect x="0" y="518" width="1440" height="2" fill="rgba(0,229,255,0.25)"/>
+  </svg>
+  <div class="particles" id="particles"></div>
+</div>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<!-- ═══ AUTH PAGE ═══ -->
+<div class="page" id="auth-page">
+  <div class="panel" id="main-panel">
+    <div class="corner-tr"></div>
+    <div class="corner-bl"></div>
+    <div class="panel-accent-top"></div>
+    <div class="panel-body">
+
+      <!-- Logo -->
+      <div class="logo-wrap">
+        <div class="logo-icon">
+          <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 2 L24 8 L24 20 L14 26 L4 20 L4 8 Z" stroke="#00ff88" stroke-width="1.5" fill="none"/>
+            <path d="M14 7 L20 11 L20 17 L14 21 L8 17 L8 11 Z" fill="rgba(0,255,136,0.12)" stroke="#00e5ff" stroke-width="1"/>
+            <circle cx="14" cy="14" r="3" fill="#00ff88" opacity="0.8"/>
+            <line x1="14" y1="2" x2="14" y2="7" stroke="#00ff88" stroke-width="1"/>
+            <line x1="24" y1="8" x2="20" y2="11" stroke="#00ff88" stroke-width="1"/>
+            <line x1="24" y1="20" x2="20" y2="17" stroke="#00ff88" stroke-width="1"/>
+            <line x1="14" y1="26" x2="14" y2="21" stroke="#00ff88" stroke-width="1"/>
+            <line x1="4" y1="20" x2="8" y2="17" stroke="#00ff88" stroke-width="1"/>
+            <line x1="4" y1="8" x2="8" y2="11" stroke="#00ff88" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="logo-name">NEO<span>CITY</span></div>
+        <div class="logo-tagline">Build the future · Sustain the world</div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+        <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+      </div>
+
+      <!-- ═══ LOGIN SECTION ═══ -->
+      <div class="form-section active" id="section-login">
+        <div class="method-toggle">
+          <button class="method-btn active" id="login-email-btn" onclick="setLoginMethod('email')">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1"/><path d="M1 4 L8 9 L15 4"/></svg>Email
+          </button>
+          <button class="method-btn" id="login-mobile-btn" onclick="setLoginMethod('mobile')">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="1" width="8" height="14" rx="1.5"/><circle cx="8" cy="12.5" r="0.8" fill="currentColor" stroke="none"/></svg>Mobile
+          </button>
+        </div>
+
+        <div id="login-creds-step">
+          <div class="field" id="login-email-field">
+            <label class="field-label">Email Address</label>
+            <div class="input-wrap">
+              <span class="input-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1"/><path d="M1 4 L8 9 L15 4"/></svg></span>
+              <input type="email" id="login-email" placeholder="commander@neocity.io" autocomplete="email"/>
+            </div>
+            <div class="field-error" id="email-err">Enter a valid email address</div>
+          </div>
+          <div class="field" id="login-mobile-field" style="display:none">
+            <label class="field-label">Mobile Number</label>
+            <div class="input-wrap">
+              <span class="input-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="1" width="8" height="14" rx="1.5"/><circle cx="8" cy="12.5" r="0.8" fill="currentColor" stroke="none"/></svg></span>
+              <input type="tel" id="login-phone" placeholder="+91 98765 43210" autocomplete="tel"/>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Password</label>
+            <div class="input-wrap">
+              <span class="input-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="12" height="8" rx="1"/><path d="M5 7V5a3 3 0 016 0v2"/></svg></span>
+              <input type="password" id="login-password" placeholder="••••••••••" autocomplete="current-password"/>
+              <button class="pw-toggle" onclick="togglePw('login-password',this)" type="button" aria-label="Toggle password">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="8" cy="8" rx="6" ry="4"/><circle cx="8" cy="8" r="2"/></svg>
+              </button>
+            </div>
+            <div class="field-error" id="pw-err">Password cannot be empty</div>
+          </div>
+          <div class="options-row">
+            <label class="remember-me">
+              <input type="checkbox" id="remember-me"/>
+              <span>Remember me</span>
+            </label>
+            <button class="forgot-link" onclick="showForgot()">Forgot password?</button>
+          </div>
+          <button class="btn-primary" onclick="handleLogin()">Initialize Session →</button>
+        </div>
+
+        <!-- Login OTP step -->
+        <div class="otp-step" id="login-otp-step">
+          <div class="otp-hint" style="margin-bottom:0.7rem;font-size:0.74rem;">Verification code sent to <span id="otp-dest" style="color:var(--neon-cyan)">contact</span></div>
+          <div class="otp-group">
+            <input class="otp-input" maxlength="1" id="otp0" inputmode="numeric" pattern="[0-9]*" oninput="otpNext(this,1)" onkeydown="otpBack(this,event)"/>
+            <input class="otp-input" maxlength="1" id="otp1" inputmode="numeric" pattern="[0-9]*" oninput="otpNext(this,2)" onkeydown="otpBack(this,event)"/>
+            <input class="otp-input" maxlength="1" id="otp2" inputmode="numeric" pattern="[0-9]*" oninput="otpNext(this,3)" onkeydown="otpBack(this,event)"/>
+            <input class="otp-input" maxlength="1" id="otp3" inputmode="numeric" pattern="[0-9]*" oninput="otpNext(this,4)" onkeydown="otpBack(this,event)"/>
+            <input class="otp-input" maxlength="1" id="otp4" inputmode="numeric" pattern="[0-9]*" oninput="otpNext(this,5)" onkeydown="otpBack(this,event)"/>
+            <input class="otp-input" maxlength="1" id="otp5" inputmode="numeric" pattern="[0-9]*" oninput="otpNext(this,-1)" onkeydown="otpBack(this,event)"/>
+          </div>
+          <div class="otp-hint">Didn't receive it? <a onclick="resendOtp()">Resend code</a></div>
+          <button class="btn-primary" onclick="verifyLoginOtp()">Verify & Enter →</button>
+          <div style="text-align:center;margin-top:0.75rem;"><button class="forgot-link" onclick="backToLogin()">← Back</button></div>
+        </div>
+
+        <div class="divider"><div class="divider-line"></div><span class="divider-text">or continue with</span><div class="divider-line"></div></div>
+        <div class="social-grid">
+          <button class="btn-social" onclick="socialLogin('Google')">
+            <svg viewBox="0 0 16 16"><path d="M15.68 8.18c0-.57-.05-1.11-.14-1.64H8v3.1h4.31a3.69 3.69 0 01-1.6 2.42v2h2.59c1.52-1.4 2.39-3.45 2.39-5.88z" fill="#4285F4"/><path d="M8 16c2.16 0 3.97-.72 5.3-1.94l-2.59-2a4.8 4.8 0 01-7.14-2.52H1v2.07A8 8 0 008 16z" fill="#34A853"/><path d="M3.57 9.54A4.82 4.82 0 013.32 8c0-.53.1-1.05.25-1.54V4.39H1A8 8 0 000 8c0 1.29.31 2.5.86 3.57l2.71-2.03z" fill="#FBBC05"/><path d="M8 3.16c1.22 0 2.31.42 3.17 1.24l2.38-2.38A7.95 7.95 0 008 0 8 8 0 001 4.39l2.57 1.93A4.77 4.77 0 018 3.16z" fill="#EA4335"/></svg>
+            Google
+          </button>
+          <button class="btn-social" onclick="socialLogin('Apple')">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M11.03 3.25c.73-.88.62-1.98.6-2.25a3.1 3.1 0 00-2.07 1.07A2.94 2.94 0 009 4.2a2.6 2.6 0 001.83-.62zm.97 2.37c-.08-.06-1.88-1.1-1.9-3.28a3.1 3.1 0 011.47-2.62 3.35 3.35 0 00-2.62-1.36c-1.11-.12-2.17.66-2.74.66-.57 0-1.45-.63-2.4-.61A3.55 3.55 0 001.85 5.1C.74 7.08 1.56 9.95 2.65 11.5c.53.78 1.17 1.65 2 1.62.8-.03 1.11-.52 2.08-.52.97 0 1.24.52 2.1.5.87-.02 1.43-.78 1.96-1.56.62-.9.88-1.77.9-1.82-.02-.01-1.69-.65-1.69-2.6z"/></svg>
+            Apple
+          </button>
+        </div>
+        <div class="panel-footer">Want a one-time code? <a onclick="switchToOtpLogin()">Use OTP instead</a></div>
+      </div>
+
+      <!-- ═══ SIGNUP SECTION ═══ -->
+      <div class="form-section" id="section-signup">
+        <div class="method-toggle">
+          <button class="method-btn active" id="signup-email-btn" onclick="setSignupMethod('email')">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1"/><path d="M1 4 L8 9 L15 4"/></svg>Email
+          </button>
+          <button class="method-btn" id="signup-mobile-btn" onclick="setSignupMethod('mobile')">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="1" width="8" height="14" rx="1.5"/><circle cx="8" cy="12.5" r="0.8" fill="currentColor" stroke="none"/></svg>Mobile
+          </button>
+        </div>
+
+        <div id="signup-fields">
+          <div class="field">
+            <label class="field-label">Commander Name</label>
+            <div class="input-wrap">
+              <span class="input-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5"/></svg></span>
+              <input type="text" id="signup-name" placeholder="Your commander alias" autocomplete="name"/>
+            </div>
+          </div>
+          <div class="field" id="signup-email-field">
+            <label class="field-label">Email Address</label>
+            <div class="input-wrap">
+              <span class="input-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1"/><path d="M1 4 L8 9 L15 4"/></svg></span>
+              <input type="email" id="signup-email" placeholder="commander@neocity.io" autocomplete="email"/>
+            </div>
+          </div>
+          <div class="field" id="signup-mobile-field" style="display:none">
+            <label class="field-label">Mobile Number</label>
+            <div class="input-wrap">
+              <span class="input-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="1" width="8" height="14" rx="1.5"/><circle cx="8" cy="12.5" r="0.8" fill="currentColor" stroke="none"/></svg></span>
+              <input type="tel" id="signup-phone" placeholder="+91 98765 43210" autocomplete="tel"/>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Create Password</label>
+            <div class="input-wrap">
+              <span class="input-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="12" height="8" rx="1"/><path d="M5 7V5a3 3 0 016 0v2"/></svg></span>
+              <input type="password" id="signup-password" placeholder="••••••••••" autocomplete="new-password"/>
+              <button class="pw-toggle" onclick="togglePw('signup-password',this)" type="button" aria-label="Toggle password">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="8" cy="8" rx="6" ry="4"/><circle cx="8" cy="8" r="2"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="handleSignup()">Send Verification Code →</button>
+          <div class="panel-footer" style="margin-top:0.75rem">Already have a city? <a onclick="switchTab('login')">Sign In</a></div>
+        </div>
+
+        <!-- Signup OTP step -->
+        <div class="otp-step" id="signup-otp-step">
+          <div class="otp-hint" style="margin-bottom:0.7rem;font-size:0.74rem;">Verify your <span id="signup-otp-dest" style="color:var(--neon-cyan)">contact</span> to complete registration</div>
+          <div class="otp-group">
+            <input class="otp-input" maxlength="1" id="sotp0" inputmode="numeric" pattern="[0-9]*" oninput="sotpNext(this,1)" onkeydown="otpBack(this,event)"/>
+            <input class="otp-input" maxlength="1" id="sotp1" inputmode="numeric" pattern="[0-9]*" oninput="sotpNext(this,2)" onkeydown="otpBack(this,event)"/>
+            <input class="otp-input" maxlength="1" id="sotp2" inputmode="numeric" pattern="[0-9]*" oninput="sotpNext(this,3)" onkeydown="otpBack(this,event)"/>
+            <input class="otp-input" maxlength="1" id="sotp3" inputmode="numeric" pattern="[0-9]*" oninput="sotpNext(this,4)" onkeydown="otpBack(this,event)"/>
+            <input class="otp-input" maxlength="1" id="sotp4" inputmode="numeric" pattern="[0-9]*" oninput="sotpNext(this,5)" onkeydown="otpBack(this,event)"/>
+            <input class="otp-input" maxlength="1" id="sotp5" inputmode="numeric" pattern="[0-9]*" oninput="sotpNext(this,-1)" onkeydown="otpBack(this,event)"/>
+          </div>
+          <div class="otp-hint">Didn't receive it? <a onclick="resendOtp()">Resend code</a></div>
+          <button class="btn-primary" onclick="verifySignupOtp()">Confirm Identity →</button>
+          <div style="text-align:center;margin-top:0.75rem;"><button class="forgot-link" onclick="backToSignup()">← Back</button></div>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-dot"></div>
+        <span class="status-text">Servers online · Secure connection</span>
+        <span class="status-version">v2.4.1</span>
+      </div>
+    </div>
+
+    <!-- ── REGISTRATION SUCCESS OVERLAY ── -->
+    <div class="overlay-screen" id="reg-success-screen">
+      <div class="reg-success-icon">
+        <svg viewBox="0 0 34 34" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 17 L13 25 L29 9"/>
+        </svg>
+      </div>
+      <div class="reg-title">Registration Complete</div>
+      <div class="reg-subtitle">Welcome to NeoCity, Commander</div>
+      <div class="reg-commander" id="reg-commander-name">COMMANDER</div>
+      <div class="reg-subtitle" style="font-size:0.7rem;margin-bottom:0.9rem;">Your account is ready. Redirecting to login in</div>
+      <div class="countdown-wrap">
+        <div class="countdown-ring">
+          <svg width="40" height="40" viewBox="0 0 40 40">
+            <circle class="ring-bg" cx="20" cy="20" r="17"/>
+            <circle class="ring-fill" id="ring-fill" cx="20" cy="20" r="17"/>
+          </svg>
+          <div class="countdown-num" id="countdown-num">5</div>
+        </div>
+        <span class="countdown-label">seconds</span>
+      </div>
+      <div class="reg-divider"></div>
+      <button class="btn-primary" onclick="goToLoginNow()" style="animation:none;max-width:280px;">Go to Sign In Now →</button>
+    </div>
+
+    <!-- ── LOGIN SUCCESS OVERLAY ── -->
+    <div class="overlay-screen" id="login-success-screen">
+      <div class="login-success-wrap">
+        <div class="success-header">
+          <div class="success-avatar" id="success-avatar">NC</div>
+          <div class="success-user-info">
+            <div class="success-greeting">Welcome back, Commander</div>
+            <div class="success-name" id="success-name">COMMANDER</div>
+            <div class="success-role">City Architect · Level 12</div>
+          </div>
+        </div>
+
+        <div class="city-stats">
+          <div class="stat-card">
+            <span class="stat-val">2.4M</span>
+            <span class="stat-lbl">Population</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-val">87%</span>
+            <span class="stat-lbl">Green Score</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-val">142</span>
+            <span class="stat-lbl">Districts</span>
+          </div>
+        </div>
+
+        <div class="last-login">
+          <svg viewBox="0 0 13 13" fill="none" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5.5"/><path d="M6.5 3.5v3l2 1.5"/></svg>
+          Last session: Today, 09:14 AM · Mumbai, IN
+        </div>
+
+        <button class="btn-primary btn-enter" onclick="enterCity()" style="animation:none;">
+          ⬡ Enter NeoCity
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ LANDING PAGE ═══ -->
+<div id="landing-page">
+  <div class="landing-scene">
+    <div class="sky"></div>
+    <div class="stars"></div>
+    <div class="city-glow"></div>
+    <svg class="cityscape" viewBox="0 0 1440 600" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lbg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a2040"/><stop offset="100%" stop-color="#020810"/></linearGradient>
+        <linearGradient id="lgnd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d2240"/><stop offset="100%" stop-color="#000307"/></linearGradient>
+      </defs>
+      <rect x="0" y="520" width="1440" height="80" fill="url(#lgnd)"/>
+      <ellipse cx="720" cy="525" rx="700" ry="25" fill="rgba(0,255,136,0.05)"/>
+      <g fill="url(#lbg1)">
+        <rect x="-10" y="150" width="120" height="370"/><rect x="100" y="200" width="85" height="320"/><rect x="170" y="130" width="110" height="390"/>
+        <rect x="270" y="170" width="80" height="350"/><rect x="340" y="110" width="130" height="410"/><rect x="460" y="180" width="90" height="340"/>
+        <rect x="890" y="160" width="120" height="360"/><rect x="1000" y="130" width="100" height="390"/><rect x="1090" y="170" width="90" height="350"/>
+        <rect x="1170" y="110" width="140" height="410"/><rect x="1300" y="155" width="100" height="365"/><rect x="1390" y="180" width="60" height="340"/>
+      </g>
+      <g fill="#061828">
+        <rect x="620" y="40" width="200" height="480"/>
+        <polygon points="720,0 680,40 760,40"/>
+        <rect x="717" y="-10" width="6" height="20"/>
+      </g>
+      <g fill="rgba(0,255,136,0.45)">
+        <rect x="640" y="55" width="12" height="7"/><rect x="660" y="55" width="12" height="7"/><rect x="680" y="55" width="12" height="7"/>
+        <rect x="700" y="55" width="12" height="7"/><rect x="720" y="55" width="12" height="7"/><rect x="740" y="55" width="12" height="7"/>
+        <rect x="640" y="72" width="12" height="7"/><rect x="700" y="72" width="12" height="7"/><rect x="740" y="72" width="12" height="7"/>
+        <rect x="660" y="89" width="12" height="7"/><rect x="700" y="89" width="12" height="7"/>
+      </g>
+      <g fill="rgba(0,229,255,0.5)">
+        <rect x="15" y="165" width="10" height="6"/><rect x="32" y="165" width="10" height="6"/><rect x="50" y="165" width="10" height="6"/>
+        <rect x="15" y="180" width="10" height="6"/><rect x="50" y="180" width="10" height="6"/>
+        <rect x="180" y="145" width="10" height="6"/><rect x="198" y="145" width="10" height="6"/><rect x="216" y="145" width="10" height="6"/>
+        <rect x="900" y="175" width="10" height="6"/><rect x="918" y="175" width="10" height="6"/>
+        <rect x="1100" y="185" width="10" height="6"/><rect x="1118" y="185" width="10" height="6"/><rect x="1136" y="185" width="10" height="6"/>
+      </g>
+      <g fill="rgba(255,230,0,0.4)">
+        <rect x="350" y="125" width="10" height="6"/><rect x="368" y="125" width="10" height="6"/><rect x="386" y="125" width="10" height="6"/>
+        <rect x="350" y="141" width="10" height="6"/><rect x="386" y="141" width="10" height="6"/>
+        <rect x="1180" y="125" width="10" height="6"/><rect x="1198" y="125" width="10" height="6"/><rect x="1216" y="125" width="10" height="6"/>
+      </g>
+      <circle cx="720" cy="2" r="3.5" fill="#ff2244"><animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite"/></circle>
+      <rect x="0" y="518" width="1440" height="2" fill="rgba(0,229,255,0.2)"/>
+      <rect x="300" y="519" width="840" height="1" fill="rgba(0,255,136,0.25)"/>
+    </svg>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <div class="landing-content">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-logo">NEO<span>CITY</span></div>
+      <div class="topbar-right">
+        <div class="topbar-user">Commander: <strong id="landing-username">COMMANDER</strong></div>
+        <button class="btn-logout" onclick="logout()">Log Out</button>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="landing-hero">
+      <div class="hero-eyebrow">Sustainable Future · 2247 AD</div>
+      <h1 class="hero-title">
+        <span class="line1">Your City Awaits,</span>
+        <span class="line2" id="landing-hero-name">Commander</span>
+      </h1>
+      <p class="hero-desc">Shape a living, breathing metropolis where every decision echoes through generations. Build smart, go green, lead humanity forward.</p>
+
+      <div class="city-grid">
+        <div class="city-card green" onclick="showToast('Opening City Map...')">
+          <div class="card-badge">Active</div>
+          <div class="card-icon">🏙️</div>
+          <div class="card-title">City Map</div>
+          <div class="card-desc">Manage districts, infrastructure, and expansion zones.</div>
+        </div>
+        <div class="city-card cyan" onclick="showToast('Opening Eco Dashboard...')">
+          <div class="card-badge" style="color:var(--neon-cyan);border-color:rgba(0,229,255,0.25);background:rgba(0,229,255,0.1);">87% Green</div>
+          <div class="card-icon">🌿</div>
+          <div class="card-title">Eco Center</div>
+          <div class="card-desc">Monitor sustainability metrics and green energy output.</div>
+        </div>
+        <div class="city-card yellow" onclick="showToast('Opening Research Lab...')">
+          <div class="card-icon">🔬</div>
+          <div class="card-title">Research Lab</div>
+          <div class="card-desc">Unlock new technologies to supercharge your city.</div>
+        </div>
+        <div class="city-card purple" onclick="showToast('Opening City Council...')">
+          <div class="card-icon">🏛️</div>
+          <div class="card-title">City Council</div>
+          <div class="card-desc">Respond to citizen demands and shape city policy.</div>
+        </div>
+        <div class="city-card green" onclick="showToast('Opening Trade Hub...')">
+          <div class="card-icon">⚡</div>
+          <div class="card-title">Trade Hub</div>
+          <div class="card-desc">Exchange resources and forge alliances with other cities.</div>
+        </div>
+        <div class="city-card cyan" onclick="showToast('Opening Reports...')">
+          <div class="card-icon">📊</div>
+          <div class="card-title">Reports</div>
+          <div class="card-desc">Deep analytics on population, economy, and ecology.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="landing-bottom">
+      <div class="bottom-stats">
+        <div class="b-stat"><span class="b-stat-val">2.4M</span><span class="b-stat-lbl">Citizens</span></div>
+        <div class="b-stat"><span class="b-stat-val">142</span><span class="b-stat-lbl">Districts</span></div>
+        <div class="b-stat"><span class="b-stat-val">87%</span><span class="b-stat-lbl">Eco Score</span></div>
+        <div class="b-stat"><span class="b-stat-val">Lv.12</span><span class="b-stat-lbl">Rank</span></div>
+      </div>
+      <div class="bottom-right">
+        <div class="online-dot"></div>
+        <span class="online-text">24,189 commanders online</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── PARTICLES ── */
+  (function(){
+    const c = document.getElementById('particles');
+    const colors = ['#00ff88','#00e5ff','#ffe600','#fff'];
+    for(let i=0;i<22;i++){
+      const p = document.createElement('div');
+      p.className='particle';
+      const s=[2,2,2,3][i%4];
+      p.style.cssText=`width:${s}px;height:${s}px;background:${colors[i%4]};left:${Math.random()*100}%;top:${70+Math.random()*30}%;animation-duration:${6+Math.random()*10}s;animation-delay:${Math.random()*8}s;opacity:0;`;
+      c.appendChild(p);
+    }
+  })();
+
+  /* ── STATE ── */
+  let loginMethod = 'email';
+  let signupMethod = 'email';
+  let registeredName = '';
+  let loggedInUser = '';
+
+  /* ── HELPERS ── */
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function togglePw(id, btn) {
+    const inp = document.getElementById(id);
+    const isText = inp.type === 'text';
+    inp.type = isText ? 'password' : 'text';
+    btn.querySelector('svg').innerHTML = isText
+      ? '<ellipse cx="8" cy="8" rx="6" ry="4"/><circle cx="8" cy="8" r="2"/>'
+      : '<ellipse cx="8" cy="8" rx="6" ry="4"/><line x1="2" y1="2" x2="14" y2="14" stroke-linecap="round"/>';
+  }
+
+  /* ── TABS ── */
+  function switchTab(tab) {
+    document.getElementById('section-login').classList.toggle('active', tab==='login');
+    document.getElementById('section-signup').classList.toggle('active', tab==='signup');
+    document.getElementById('tab-login').classList.toggle('active', tab==='login');
+    document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  }
+
+  /* ── METHOD TOGGLES ── */
+  function setLoginMethod(m) {
+    loginMethod = m;
+    document.getElementById('login-email-btn').classList.toggle('active', m==='email');
+    document.getElementById('login-mobile-btn').classList.toggle('active', m==='mobile');
+    document.getElementById('login-email-field').style.display = m==='email' ? '' : 'none';
+    document.getElementById('login-mobile-field').style.display = m==='mobile' ? '' : 'none';
+  }
+
+  function setSignupMethod(m) {
+    signupMethod = m;
+    document.getElementById('signup-email-btn').classList.toggle('active', m==='email');
+    document.getElementById('signup-mobile-btn').classList.toggle('active', m==='mobile');
+    document.getElementById('signup-email-field').style.display = m==='email' ? '' : 'none';
+    document.getElementById('signup-mobile-field').style.display = m==='mobile' ? '' : 'none';
+  }
+
+  /* ── OTP NAVIGATION ── */
+  function otpNext(el, next) {
+    // Handle paste
+    if(el.value.length > 1) {
+      const digits = el.value.replace(/\D/g,'').slice(0,6);
+      const prefix = el.id.replace(/\d+$/,'');
+      [...digits].forEach((d,i) => {
+        const inp = document.getElementById(prefix+i);
+        if(inp) inp.value = d;
+      });
+      const lastFilled = Math.min(digits.length, 5);
+      document.getElementById(prefix+lastFilled)?.focus();
+      el.value = el.value[0];
+      return;
+    }
+    if(el.value && next>=0) document.getElementById('otp'+next)?.focus();
+  }
+  function sotpNext(el, next) {
+    if(el.value.length > 1) {
+      const digits = el.value.replace(/\D/g,'').slice(0,6);
+      [...digits].forEach((d,i) => {
+        const inp = document.getElementById('sotp'+i);
+        if(inp) inp.value = d;
+      });
+      const lastFilled = Math.min(digits.length, 5);
+      document.getElementById('sotp'+lastFilled)?.focus();
+      el.value = el.value[0];
+      return;
+    }
+    if(el.value && next>=0) document.getElementById('sotp'+next)?.focus();
+  }
+  function otpBack(el, e) {
+    if(e.key==='Backspace' && !el.value) {
+      const id = el.id;
+      const prefix = id.replace(/\d+$/,'');
+      const idx = parseInt(id.match(/\d+$/)[0]);
+      if(idx>0) document.getElementById(prefix+(idx-1))?.focus();
+    }
+  }
+
+  /* ── LOGIN ── */
+  function handleLogin() {
+    const email = document.getElementById('login-email').value;
+    const phone = document.getElementById('login-phone').value;
+    const pw = document.getElementById('login-password').value;
+    const val = loginMethod==='email' ? email : phone;
+    document.getElementById('email-err').classList.remove('visible');
+    document.getElementById('pw-err').classList.remove('visible');
+    if(!val.trim()) { document.getElementById('email-err').classList.add('visible'); return; }
+    if(!pw.trim()) { document.getElementById('pw-err').classList.add('visible'); return; }
+    loggedInUser = loginMethod==='email'
+      ? val.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
+      : 'Commander';
+    showLoginSuccess();
+  }
+
+  function showLoginSuccess() {
+    const initials = loggedInUser.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('success-avatar').textContent = initials || 'NC';
+    document.getElementById('success-name').textContent = loggedInUser.toUpperCase();
+    document.getElementById('login-success-screen').classList.add('active');
+  }
+
+  function switchToOtpLogin() {
+    const email = document.getElementById('login-email').value;
+    const phone = document.getElementById('login-phone').value;
+    const val = loginMethod==='email' ? email : phone;
+    if(!val.trim()) { showToast('Enter your email or mobile first'); return; }
+    document.getElementById('login-creds-step').style.display='none';
+    document.getElementById('login-otp-step').classList.add('active');
+    document.getElementById('otp-dest').textContent = val;
+    loggedInUser = loginMethod==='email'
+      ? val.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
+      : 'Commander';
+    document.getElementById('otp0').focus();
+    showToast('Code sent to '+val);
+  }
+
+  function backToLogin() {
+    document.getElementById('login-otp-step').classList.remove('active');
+    document.getElementById('login-creds-step').style.display='';
+    for(let i=0;i<6;i++) document.getElementById('otp'+i).value='';
+  }
+
+  function verifyLoginOtp() {
+    const code = [0,1,2,3,4,5].map(i=>document.getElementById('otp'+i).value).join('');
+    if(code.length<6) { showToast('Enter all 6 digits'); return; }
+    showLoginSuccess();
+  }
+
+  function enterCity() {
+    document.getElementById('landing-username').textContent = loggedInUser.toUpperCase();
+    document.getElementById('landing-hero-name').textContent = loggedInUser;
+    document.getElementById('auth-page').style.display = 'none';
+    document.getElementById('landing-page').classList.add('active');
+  }
+
+  /* ── SIGNUP ── */
+  function handleSignup() {
+    const name = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const phone = document.getElementById('signup-phone').value.trim();
+    const pw = document.getElementById('signup-password').value;
+    const contact = signupMethod==='email' ? email : phone;
+    if(!name || !contact || !pw) { showToast('Fill in all fields to proceed'); return; }
+    registeredName = name;
+    document.getElementById('signup-fields').style.display='none';
+    document.getElementById('signup-otp-step').classList.add('active');
+    document.getElementById('signup-otp-dest').textContent = contact;
+    document.getElementById('sotp0').focus();
+    showToast('Verification code sent to '+contact);
+  }
+
+  function backToSignup() {
+    document.getElementById('signup-otp-step').classList.remove('active');
+    document.getElementById('signup-fields').style.display='';
+    for(let i=0;i<6;i++) document.getElementById('sotp'+i).value='';
+  }
+
+  function verifySignupOtp() {
+    const code = [0,1,2,3,4,5].map(i=>document.getElementById('sotp'+i).value).join('');
+    if(code.length<6) { showToast('Enter all 6 digits'); return; }
+    showRegSuccess();
+  }
+
+  /* ── REGISTRATION SUCCESS ── */
+  function showRegSuccess() {
+    document.getElementById('reg-commander-name').textContent = registeredName.toUpperCase();
+    document.getElementById('reg-success-screen').classList.add('active');
+    startCountdown();
+  }
+
+  let countdownInterval = null;
+  function startCountdown() {
+    let secs = 5;
+    const numEl = document.getElementById('countdown-num');
+    const ringEl = document.getElementById('ring-fill');
+    const circumference = 110;
+    ringEl.style.strokeDashoffset = '0';
+    numEl.textContent = secs;
+    clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+      secs--;
+      numEl.textContent = secs;
+      const offset = circumference * (1 - secs/5);
+      ringEl.style.strokeDashoffset = offset;
+      if(secs <= 0) { clearInterval(countdownInterval); goToLoginNow(); }
+    }, 1000);
+  }
+
+  function goToLoginNow() {
+    clearInterval(countdownInterval);
+    document.getElementById('reg-success-screen').classList.remove('active');
+    // Reset signup form
+    document.getElementById('signup-otp-step').classList.remove('active');
+    document.getElementById('signup-fields').style.display='';
+    document.getElementById('signup-name').value='';
+    document.getElementById('signup-email').value='';
+    document.getElementById('signup-phone').value='';
+    document.getElementById('signup-password').value='';
+    for(let i=0;i<6;i++) document.getElementById('sotp'+i).value='';
+    loggedInUser = registeredName;
+    switchTab('login');
+    showToast('Account ready — sign in, Commander '+registeredName+'!');
+  }
+
+  function resendOtp() { showToast('New code dispatched'); }
+  function showForgot() { showToast('Recovery link sent — check your inbox'); }
+
+  function socialLogin(provider) {
+    loggedInUser = 'Commander';
+    showToast('Connecting via '+provider+'...');
+    setTimeout(() => showLoginSuccess(), 1200);
+  }
+
+  /* ── LOGOUT ── */
+  function logout() {
+    document.getElementById('landing-page').classList.remove('active');
+    document.getElementById('auth-page').style.display='';
+    document.getElementById('login-success-screen').classList.remove('active');
+    document.getElementById('login-password').value='';
+    showToast('Logged out — see you next time, Commander');
+  }
+</script>
+</body>
+</html>

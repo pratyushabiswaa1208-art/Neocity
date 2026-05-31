@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NeoCity — Mission Logbook</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Exo+2:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ng:#00ff88;--nc:#00e5ff;--ny:#ffe600;--nr:#ff4d6d;--np:#a855f7;
+  --dark:#04080f;--panel:rgba(6,20,38,0.92);--border:rgba(0,229,255,0.16);
+  --bright:#e8f4ff;--muted:rgba(180,210,240,0.55);--ibg:rgba(0,20,45,0.7);
+  --gg:0 0 14px rgba(0,255,136,0.4),0 0 40px rgba(0,255,136,0.12);
+  --gc:0 0 14px rgba(0,229,255,0.4),0 0 40px rgba(0,229,255,0.12);
+  --gr:0 0 14px rgba(255,77,109,0.4),0 0 40px rgba(255,77,109,0.12);
+  --gy:0 0 14px rgba(255,230,0,0.4),0 0 40px rgba(255,230,0,0.12);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Exo 2',sans-serif;background:var(--dark);color:var(--bright);min-height:100vh;overflow-x:hidden}
+
+/* ── BACKGROUND ── */
+.bg-scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-sky{position:absolute;inset:0;background:linear-gradient(180deg,#000408 0%,#020c1a 30%,#031a2e 60%,#041f38 85%,#051525 100%)}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);background-size:48px 48px}
+.bg-stars::before,.bg-stars::after{content:'';position:absolute;inset:0}
+.bg-stars::before{background-image:radial-gradient(1px 1px at 8% 12%,rgba(255,255,255,.7) 0%,transparent 100%),radial-gradient(1px 1px at 22% 6%,rgba(255,255,255,.5) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 38% 18%,rgba(255,255,255,.8) 0%,transparent 100%),radial-gradient(1px 1px at 55% 4%,rgba(255,255,255,.6) 0%,transparent 100%),radial-gradient(1px 1px at 70% 16%,rgba(0,229,255,.5) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 85% 9%,rgba(255,255,255,.7) 0%,transparent 100%),radial-gradient(1px 1px at 62% 28%,rgba(0,255,136,.4) 0%,transparent 100%),radial-gradient(1px 1px at 15% 35%,rgba(255,255,255,.4) 0%,transparent 100%),radial-gradient(1px 1px at 90% 22%,rgba(255,230,0,.3) 0%,transparent 100%)}
+.bg-stars::after{background-image:radial-gradient(1px 1px at 33% 10%,rgba(255,255,255,.6) 0%,transparent 100%),radial-gradient(1px 1px at 63% 20%,rgba(255,255,255,.5) 0%,transparent 100%),radial-gradient(1px 1px at 79% 33%,rgba(255,255,255,.4) 0%,transparent 100%);animation:twinkle 4s ease-in-out infinite alternate}
+@keyframes twinkle{0%{opacity:.6}100%{opacity:1}}
+.scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:1}
+.vignette{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,.7) 100%);pointer-events:none;z-index:1}
+
+/* ── LAYOUT ── */
+.wrapper{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;padding-bottom:200px}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.8rem;border-bottom:1px solid var(--border);backdrop-filter:blur(16px);background:rgba(4,8,15,.82);position:sticky;top:0;z-index:50;gap:.75rem;flex-wrap:wrap}
+.tb-logo{font-family:'Orbitron',monospace;font-size:.95rem;font-weight:900;letter-spacing:.18em;white-space:nowrap}
+.tb-logo span{color:var(--ng);text-shadow:var(--gg)}
+.tb-title-wrap{display:flex;flex-direction:column;gap:2px}
+.tb-title{font-family:'Orbitron',monospace;font-size:.58rem;font-weight:700;letter-spacing:.22em;color:var(--nc);text-transform:uppercase}
+.tb-title-sub{font-size:.52rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.tb-right{display:flex;align-items:center;gap:.6rem}
+.tb-btn{background:none;border:1px solid rgba(0,229,255,.2);border-radius:2px;padding:.28rem .65rem;font-family:'Exo 2',sans-serif;font-size:.62rem;letter-spacing:.1em;color:var(--muted);cursor:pointer;transition:all .2s;text-transform:uppercase;white-space:nowrap}
+.tb-btn:hover{border-color:rgba(0,229,255,.5);color:var(--nc)}
+.tb-btn.green{border-color:rgba(0,255,136,.35);color:var(--ng)}
+.tb-btn.green:hover{border-color:var(--ng);box-shadow:var(--gg)}
+
+/* ── HERO STRIP ── */
+.hero-strip{padding:2.2rem 1.8rem 1.2rem;text-align:center;animation:fade-down .6s .1s cubic-bezier(.16,1,.3,1) both}
+@keyframes fade-down{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+.hero-eyebrow{font-size:.55rem;letter-spacing:.32em;text-transform:uppercase;color:var(--nc);margin-bottom:.5rem;display:flex;align-items:center;justify-content:center;gap:8px}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';flex:1;max-width:80px;height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,255,.4))}
+.hero-eyebrow::after{background:linear-gradient(90deg,rgba(0,229,255,.4),transparent)}
+.hero-title{font-family:'Orbitron',monospace;font-size:clamp(1.4rem,4vw,2.2rem);font-weight:900;letter-spacing:.1em;color:var(--bright);margin-bottom:.4rem}
+.hero-title span{color:var(--ng);text-shadow:var(--gg)}
+.hero-sub{font-size:.78rem;color:var(--muted);letter-spacing:.06em;line-height:1.6;max-width:500px;margin:0 auto}
+
+/* ── PROGRESS RIBBON ── */
+.progress-ribbon{display:flex;align-items:center;justify-content:center;gap:0;padding:.8rem 1.8rem;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(0,10,24,.5);overflow-x:auto;scrollbar-width:none}
+.progress-ribbon::-webkit-scrollbar{display:none}
+.pr-node{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 6px;cursor:pointer;transition:transform .2s;flex-shrink:0}
+.pr-node:hover{transform:translateY(-2px)}
+.pr-pip{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:.5rem;font-weight:800;transition:box-shadow .3s;border:2px solid transparent;position:relative}
+.pr-pip.done{background:rgba(0,255,136,.12);border-color:var(--ng);color:var(--ng);box-shadow:0 0 10px rgba(0,255,136,.3)}
+.pr-pip.done::after{content:'✓';position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:var(--ng);color:#020e08;font-size:.42rem;font-weight:900;display:flex;align-items:center;justify-content:center;line-height:12px;text-align:center}
+.pr-pip.current{background:rgba(0,229,255,.1);border-color:var(--nc);color:var(--nc);box-shadow:var(--gc);animation:pulse-pip 2s infinite}
+@keyframes pulse-pip{0%,100%{box-shadow:var(--gc)}50%{box-shadow:0 0 22px rgba(0,229,255,.7)}}
+.pr-pip.locked{background:rgba(0,20,40,.5);border-color:rgba(0,229,255,.1);color:rgba(180,210,240,.2)}
+.pr-line{width:24px;height:1px;flex-shrink:0;align-self:center;margin:0 -2px;margin-bottom:18px}
+.pr-line.done-line{background:rgba(0,255,136,.4)}
+.pr-line.pending-line{background:rgba(0,229,255,.08)}
+.pr-lbl{font-family:'Orbitron',monospace;font-size:.38rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center;max-width:40px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-node .pr-lbl.active-lbl{color:var(--nc)}
+
+/* ── MAIN CONTENT ── */
+.content{padding:1.6rem 1.8rem;max-width:960px;margin:0 auto;width:100%}
+
+/* ── SECTION HEADER ── */
+.sec-header{display:flex;align-items:center;gap:10px;margin-bottom:1.2rem;animation:fade-down .5s both}
+.sec-header-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+.sec-header-text{font-family:'Orbitron',monospace;font-size:.6rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.sec-header-dot{width:5px;height:5px;border-radius:50%;background:var(--ng);box-shadow:0 0 6px var(--ng);flex-shrink:0}
+
+/* ── LEVEL CARDS GRID ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:2rem}
+
+/* ── LEVEL CARD ── */
+.lv-card{border:1px solid var(--border);border-radius:3px;background:var(--panel);position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s;animation:card-in .5s cubic-bezier(.16,1,.3,1) both;cursor:default}
+@keyframes card-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.lv-card:hover{transform:translateY(-3px)}
+
+/* Completed card variants */
+.lv-card.result-high{border-color:rgba(0,255,136,.25);box-shadow:0 0 0 0 rgba(0,255,136,.0)}
+.lv-card.result-high:hover{box-shadow:0 0 24px rgba(0,255,136,.18)}
+.lv-card.result-moderate{border-color:rgba(255,230,0,.22)}
+.lv-card.result-moderate:hover{box-shadow:0 0 24px rgba(255,230,0,.15)}
+.lv-card.result-polluted{border-color:rgba(255,77,109,.2)}
+.lv-card.result-polluted:hover{box-shadow:0 0 24px rgba(255,77,109,.14)}
+.lv-card.state-unlocked{border-color:rgba(0,229,255,.3);cursor:pointer}
+.lv-card.state-unlocked:hover{box-shadow:0 0 28px rgba(0,229,255,.25);transform:translateY(-5px)}
+.lv-card.state-locked{opacity:.45;cursor:not-allowed}
+.lv-card.state-locked:hover{transform:none;box-shadow:none}
+
+/* top bar accent */
+.lv-card-accent{height:2px;width:100%}
+.result-high .lv-card-accent{background:linear-gradient(90deg,transparent,var(--ng) 40%,transparent)}
+.result-moderate .lv-card-accent{background:linear-gradient(90deg,transparent,var(--ny) 40%,transparent)}
+.result-polluted .lv-card-accent{background:linear-gradient(90deg,transparent,var(--nr) 40%,transparent)}
+.state-unlocked .lv-card-accent{background:linear-gradient(90deg,transparent,var(--nc) 40%,transparent);animation:scan-bar 2.5s ease-in-out infinite alternate}
+@keyframes scan-bar{0%{opacity:.5}100%{opacity:1;box-shadow:0 0 8px var(--nc)}}
+.state-locked .lv-card-accent{background:rgba(0,229,255,.06)}
+
+/* card body */
+.lv-card-body{padding:1rem 1.1rem}
+
+/* level number + name row */
+.lv-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:.8rem}
+.lv-num{font-family:'Orbitron',monospace;font-size:.55rem;font-weight:700;letter-spacing:.18em;padding:2px 7px;border-radius:2px;text-transform:uppercase;flex-shrink:0}
+.result-high .lv-num{background:rgba(0,255,136,.1);color:var(--ng);border:1px solid rgba(0,255,136,.2)}
+.result-moderate .lv-num{background:rgba(255,230,0,.09);color:var(--ny);border:1px solid rgba(255,230,0,.18)}
+.result-polluted .lv-num{background:rgba(255,77,109,.09);color:var(--nr);border:1px solid rgba(255,77,109,.18)}
+.state-unlocked .lv-num{background:rgba(0,229,255,.08);color:var(--nc);border:1px solid rgba(0,229,255,.2)}
+.state-locked .lv-num{background:rgba(0,20,40,.5);color:rgba(180,210,240,.25);border:1px solid rgba(0,229,255,.1)}
+.lv-name-wrap{text-align:right}
+.lv-name{font-family:'Orbitron',monospace;font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;line-height:1.2}
+.lv-subtitle{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+
+/* Result badge */
+.lv-badge{display:flex;align-items:center;gap:7px;padding:.45rem .7rem;border-radius:2px;margin-bottom:.85rem;border:1px solid}
+.badge-icon{font-size:1.1rem;line-height:1;flex-shrink:0}
+.badge-text{flex:1}
+.badge-title{font-family:'Orbitron',monospace;font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.badge-sub{font-size:.58rem;color:var(--muted);margin-top:2px;letter-spacing:.04em}
+.result-high .lv-badge{background:rgba(0,255,136,.05);border-color:rgba(0,255,136,.2)}
+.result-high .badge-title{color:var(--ng)}
+.result-moderate .lv-badge{background:rgba(255,230,0,.05);border-color:rgba(255,230,0,.18)}
+.result-moderate .badge-title{color:var(--ny)}
+.result-polluted .lv-badge{background:rgba(255,77,109,.05);border-color:rgba(255,77,109,.18)}
+.result-polluted .badge-title{color:var(--nr)}
+
+/* Stats mini bars */
+.lv-stats{display:flex;flex-direction:column;gap:5px;margin-bottom:.85rem}
+.lv-stat-row{display:flex;align-items:center;gap:7px}
+.lv-stat-lbl{font-size:.55rem;letter-spacing:.08em;color:var(--muted);width:64px;flex-shrink:0}
+.lv-stat-bar-wrap{flex:1;height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+.lv-stat-bar{height:100%;border-radius:3px;transition:width .8s ease}
+.lv-stat-val{font-family:'Orbitron',monospace;font-size:.52rem;font-weight:700;min-width:26px;text-align:right}
+
+/* Elements used tags */
+.lv-elements{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:.85rem;min-height:20px}
+.lv-el-tag{font-size:.5rem;padding:2px 5px;border-radius:2px;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.14);color:rgba(0,255,136,.75);letter-spacing:.05em;line-height:1.4}
+
+/* Meta row */
+.lv-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;border-top:1px solid rgba(0,229,255,.08);padding-top:.6rem;flex-wrap:wrap;gap:4px}
+.lv-meta-item{font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:4px}
+.lv-meta-item span{color:var(--bright);font-family:'Share Tech Mono',monospace;font-size:.6rem}
+
+/* Locked card content */
+.lv-locked-body{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.6rem 1.1rem;gap:.5rem;text-align:center}
+.lv-lock-icon{font-size:1.8rem;opacity:.3;filter:grayscale(1)}
+.lv-lock-text{font-family:'Orbitron',monospace;font-size:.58rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(180,210,240,.2)}
+.lv-lock-sub{font-size:.58rem;color:rgba(180,210,240,.2);letter-spacing:.06em}
+
+/* Unlock CTA card */
+.lv-card.state-unlocked .lv-card-body{padding-bottom:0}
+.lv-unlock-cta{margin:0 1.1rem 1rem;background:transparent;border:1.5px solid var(--nc);border-radius:2px;padding:.65rem;font-family:'Orbitron',monospace;font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--nc);cursor:pointer;width:calc(100% - 2.2rem);transition:all .25s;position:relative;overflow:hidden;box-shadow:var(--gc)}
+.lv-unlock-cta::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(0,229,255,.1),transparent);transform:translateX(-100%);transition:transform .4s}
+.lv-unlock-cta:hover::before{transform:translateX(100%)}
+.lv-unlock-cta:hover{background:rgba(0,229,255,.1);color:#fff;box-shadow:0 0 28px rgba(0,229,255,.4)}
+.lv-unlock-cta:active{transform:scale(.97)}
+.lv-unlock-pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--nc);box-shadow:0 0 6px var(--nc);animation:pdot 1.5s infinite;margin-right:6px;vertical-align:middle}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* "No results yet" card */
+.lv-pending-body{display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:1.2rem 1.1rem;text-align:center}
+.lv-pending-icon{font-size:1.4rem;opacity:.4}
+.lv-pending-text{font-size:.6rem;color:rgba(180,210,240,.35);letter-spacing:.1em;text-transform:uppercase;font-family:'Orbitron',monospace}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:3rem 1rem;animation:fade-down .6s both}
+.empty-icon{font-size:3rem;margin-bottom:.8rem;opacity:.4}
+.empty-title{font-family:'Orbitron',monospace;font-size:.9rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
+.empty-sub{font-size:.75rem;color:rgba(180,210,240,.35);line-height:1.7;letter-spacing:.04em}
+.empty-btn{margin-top:1.4rem;display:inline-block;background:transparent;border:1.5px solid var(--ng);border-radius:2px;padding:.7rem 1.6rem;font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ng);cursor:pointer;transition:all .25s;box-shadow:var(--gg)}
+.empty-btn:hover{background:rgba(0,255,136,.1);color:#fff}
+
+/* ── BOTTOM FIXED BAR ── */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:60;padding:1rem 1.8rem;background:linear-gradient(0deg,rgba(2,6,14,.98) 0%,rgba(2,6,14,.9) 80%,transparent 100%);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.bb-left{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.bb-left strong{color:var(--ng)}
+.neobot-trigger{display:flex;align-items:center;gap:10px;background:rgba(0,229,255,.05);border:1.5px solid var(--nc);border-radius:3px;padding:.65rem 1.2rem;cursor:pointer;transition:all .28s;position:relative;overflow:hidden}
+.neobot-trigger::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(0,229,255,.08),transparent);transform:translateX(-100%);transition:transform .5s}
+.neobot-trigger:hover::before{transform:translateX(100%)}
+.neobot-trigger:hover{border-color:var(--nc);box-shadow:0 0 30px rgba(0,229,255,.35);transform:translateY(-2px)}
+.neobot-orb{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,rgba(0,229,255,.15),rgba(0,255,136,.08));border:1.5px solid rgba(0,229,255,.5);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 14px rgba(0,229,255,.3),inset 0 0 10px rgba(0,229,255,.1);animation:orb-pulse 3s ease-in-out infinite}
+@keyframes orb-pulse{0%,100%{box-shadow:0 0 14px rgba(0,229,255,.3),inset 0 0 10px rgba(0,229,255,.1)}50%{box-shadow:0 0 24px rgba(0,229,255,.55),inset 0 0 16px rgba(0,229,255,.18)}}
+.neobot-orb svg{width:18px;height:18px;stroke:var(--nc);stroke-width:1.6;fill:none}
+.neobot-text{text-align:left}
+.neobot-label{font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--nc)}
+.neobot-sub{font-size:.58rem;color:var(--muted);letter-spacing:.06em;margin-top:2px}
+.neobot-badge{position:absolute;top:-4px;right:-4px;background:var(--ng);color:#020e08;font-family:'Orbitron',monospace;font-size:.44rem;font-weight:900;padding:2px 5px;border-radius:2px;letter-spacing:.08em;animation:badge-glow 2s infinite}
+@keyframes badge-glow{0%,100%{box-shadow:0 0 6px rgba(0,255,136,.5)}50%{box-shadow:0 0 14px rgba(0,255,136,.8)}}
+
+/* ── NEOBOT PANEL ── */
+.neobot-panel{position:fixed;bottom:0;left:0;right:0;z-index:70;transform:translateY(100%);transition:transform .45s cubic-bezier(.16,1,.3,1);max-height:90vh;display:flex;flex-direction:column}
+.neobot-panel.open{transform:translateY(0)}
+.neobot-panel-inner{background:rgba(2,10,24,.98);border-top:1.5px solid rgba(0,229,255,.3);border-left:1px solid var(--border);border-right:1px solid var(--border);border-radius:4px 4px 0 0;display:flex;flex-direction:column;max-height:90vh;backdrop-filter:blur(24px);overflow:hidden}
+.nb-panel-accent{height:2px;background:linear-gradient(90deg,transparent,var(--nc) 20%,var(--ng) 50%,var(--nc) 80%,transparent);animation:scan-bar 2.5s ease-in-out infinite alternate}
+.nb-header{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.2rem;border-bottom:1px solid var(--border);flex-shrink:0}
+.nb-header-left{display:flex;align-items:center;gap:10px}
+.nb-orb-sm{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,rgba(0,229,255,.15),rgba(0,255,136,.08));border:1.5px solid rgba(0,229,255,.4);display:flex;align-items:center;justify-content:center;animation:orb-pulse 3s ease-in-out infinite}
+.nb-orb-sm svg{width:14px;height:14px;stroke:var(--nc);stroke-width:1.8;fill:none}
+.nb-name{font-family:'Orbitron',monospace;font-size:.75rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--nc)}
+.nb-status{font-size:.55rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(0,255,136,.7);display:flex;align-items:center;gap:5px}
+.nb-status-dot{width:5px;height:5px;border-radius:50%;background:var(--ng);animation:pdot 1.8s infinite}
+.nb-close{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:2px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:all .2s;flex-shrink:0}
+.nb-close:hover{background:rgba(255,77,109,.12);border-color:rgba(255,77,109,.35);color:var(--nr)}
+.nb-close svg{width:13px;height:13px;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+
+/* Chat messages */
+.nb-messages{flex:1;overflow-y:auto;padding:.9rem 1.2rem;display:flex;flex-direction:column;gap:.7rem;scrollbar-width:thin;scrollbar-color:rgba(0,229,255,.15) transparent;max-height:340px}
+.nb-messages::-webkit-scrollbar{width:4px}
+.nb-messages::-webkit-scrollbar-thumb{background:rgba(0,229,255,.2);border-radius:2px}
+.nb-msg{display:flex;gap:8px;animation:msg-in .35s cubic-bezier(.16,1,.3,1) both}
+@keyframes msg-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.nb-msg.user{flex-direction:row-reverse}
+.nb-msg-avatar{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.85rem;margin-top:2px}
+.bot-avatar{background:linear-gradient(135deg,rgba(0,229,255,.14),rgba(0,255,136,.07));border:1px solid rgba(0,229,255,.3)}
+.bot-avatar svg{width:12px;height:12px;stroke:var(--nc);stroke-width:2;fill:none}
+.user-avatar{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);font-size:.65rem}
+.nb-bubble{max-width:85%;border-radius:2px;padding:.6rem .8rem;font-size:.74rem;line-height:1.65;letter-spacing:.03em}
+.bot-bubble{background:rgba(0,20,50,.7);border:1px solid rgba(0,229,255,.15);color:var(--bright);border-radius:2px 10px 10px 2px}
+.user-bubble{background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.18);color:var(--ng);border-radius:10px 2px 2px 10px;text-align:right}
+.nb-typing{display:flex;gap:4px;align-items:center;padding:.55rem .7rem}
+.nb-dot{width:5px;height:5px;border-radius:50%;background:var(--nc);animation:typing-dot 1.2s ease-in-out infinite}
+.nb-dot:nth-child(2){animation-delay:.2s}
+.nb-dot:nth-child(3){animation-delay:.4s}
+@keyframes typing-dot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+
+/* Quick prompts */
+.nb-prompts{display:flex;gap:5px;padding:.6rem 1.2rem;overflow-x:auto;scrollbar-width:none;flex-shrink:0;border-top:1px solid var(--border)}
+.nb-prompts::-webkit-scrollbar{display:none}
+.nb-prompt-btn{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.18);border-radius:2px;padding:.32rem .65rem;font-family:'Exo 2',sans-serif;font-size:.62rem;letter-spacing:.06em;color:var(--nc);cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0}
+.nb-prompt-btn:hover{background:rgba(0,229,255,.12);border-color:rgba(0,229,255,.4)}
+
+/* Input row */
+.nb-input-row{display:flex;align-items:center;gap:8px;padding:.7rem 1.2rem;border-top:1px solid var(--border);flex-shrink:0}
+.nb-input{flex:1;background:var(--ibg);border:1px solid var(--border);border-radius:2px;padding:.55rem .8rem;font-family:'Exo 2',sans-serif;font-size:.8rem;color:var(--bright);outline:none;transition:border-color .2s,box-shadow .2s;letter-spacing:.03em}
+.nb-input:focus{border-color:rgba(0,229,255,.45);box-shadow:var(--gc)}
+.nb-input::placeholder{color:rgba(180,210,240,.22);font-size:.75rem}
+.nb-send{background:rgba(0,255,136,.08);border:1.5px solid var(--ng);border-radius:2px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0}
+.nb-send:hover{background:rgba(0,255,136,.18);box-shadow:var(--gg)}
+.nb-send:disabled{opacity:.3;cursor:not-allowed}
+.nb-send svg{width:15px;height:15px;stroke:var(--ng);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%) translateY(-80px);background:rgba(4,20,40,.96);border:1px solid rgba(0,229,255,.3);border-radius:2px;padding:.5rem 1.2rem;font-size:.72rem;color:var(--nc);letter-spacing:.08em;transition:transform .4s cubic-bezier(.16,1,.3,1);z-index:200;white-space:nowrap;max-width:calc(100vw - 2rem);overflow:hidden;text-overflow:ellipsis}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+@media(max-width:600px){
+  .topbar{padding:.65rem 1rem}
+  .content{padding:1.2rem 1rem}
+  .cards-grid{grid-template-columns:1fr}
+  .hero-strip{padding:1.6rem 1rem .8rem}
+  .progress-ribbon{padding:.7rem 1rem}
+  .bottom-bar{padding:.75rem 1rem}
+  .neobot-label{font-size:.58rem}
+  .neobot-sub{display:none}
+  .nb-messages{max-height:260px}
+}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div class="bg-scene">
+  <div class="bg-sky"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-stars"></div>
+</div>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<div class="toast" id="toast"></div>
+
+<!-- NEOBOT PANEL -->
+<div class="neobot-panel" id="neobot-panel">
+  <div class="neobot-panel-inner">
+    <div class="nb-panel-accent"></div>
+    <div class="nb-header">
+      <div class="nb-header-left">
+        <div class="nb-orb-sm">
+          <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/><path d="M5 2l6 0M5 14l6 0" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <div class="nb-name">NeoBot AI</div>
+          <div class="nb-status"><div class="nb-status-dot"></div>Online · City Intelligence Active</div>
+        </div>
+      </div>
+      <button class="nb-close" onclick="closeNeobot()" aria-label="Close">
+        <svg viewBox="0 0 14 14"><path d="M1 1l12 12M13 1L1 13"/></svg>
+      </button>
+    </div>
+    <div class="nb-messages" id="nb-messages"></div>
+    <div class="nb-prompts" id="nb-prompts">
+      <button class="nb-prompt-btn" onclick="sendPrompt('How do I increase my green score?')">🌿 Improve green score</button>
+      <button class="nb-prompt-btn" onclick="sendPrompt('How to reduce pollution in my city?')">🏭 Reduce pollution</button>
+      <button class="nb-prompt-btn" onclick="sendPrompt('What elements should I use at Level 1?')">🏠 Best Lv.1 elements</button>
+      <button class="nb-prompt-btn" onclick="sendPrompt('Explain how energy scoring works')">⚡ Energy scoring</button>
+      <button class="nb-prompt-btn" onclick="sendPrompt('What is the difference between high and moderate result?')">📊 Result grades</button>
+      <button class="nb-prompt-btn" onclick="sendPrompt('Give me tips for building a sustainable city')">🏙️ Sustainability tips</button>
+    </div>
+    <div class="nb-input-row">
+      <input class="nb-input" id="nb-input" type="text" placeholder="Ask NeoBot about your city..." maxlength="300" onkeydown="if(event.key==='Enter')sendMessage()"/>
+      <button class="nb-send" id="nb-send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 18 18"><path d="M2 9l14-7-6 7 6 7z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN WRAPPER -->
+<div class="wrapper">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="tb-logo">NEO<span>CITY</span></div>
+      <div class="tb-title-wrap">
+        <div class="tb-title">Mission Logbook</div>
+        <div class="tb-title-sub">Commander's Record Archive</div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <button class="tb-btn" onclick="window.location.href='neocity-dashboard.html'">← Dashboard</button>
+      <button class="tb-btn green" onclick="goToCurrentLevel()" id="play-btn">▶ Play Current Level</button>
+    </div>
+  </header>
+
+  <!-- HERO STRIP -->
+  <div class="hero-strip">
+    <div class="hero-eyebrow">City Chronicle</div>
+    <h1 class="hero-title">Your <span>Mission</span> History</h1>
+    <p class="hero-sub" id="hero-sub-text">Loading your city records...</p>
+  </div>
+
+  <!-- PROGRESS RIBBON -->
+  <div class="progress-ribbon" id="progress-ribbon"></div>
+
+  <!-- MAIN CONTENT -->
+  <main class="content">
+    <div class="sec-header">
+      <div class="sec-header-text"><div class="sec-header-dot"></div>Level Archives</div>
+      <div class="sec-header-line"></div>
+    </div>
+    <div class="cards-grid" id="cards-grid"></div>
+  </main>
+
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <div class="bb-left">NeoCity v2.4.1 · <strong id="bb-progress-text">Loading...</strong></div>
+  <button class="neobot-trigger" id="neobot-trigger" onclick="window.location.href='neocity-neobot.html?open=1'">
+    <div class="neobot-orb">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M8 14c-4 1-6 3-6 5h20c0-2-2-4-6-5"/><circle cx="9" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="8" r="1" fill="currentColor" stroke="none"/><path d="M10 11s.5 1 2 1 2-1 2-1"/></svg>
+    </div>
+    <div class="neobot-text">
+      <div class="neobot-label">Ask NeoBot</div>
+      <div class="neobot-sub">AI city advisor · Get help & tips</div>
+    </div>
+    <div class="neobot-badge">AI</div>
+  </button>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════
+   LEVEL + HISTORY DATA
+════════════════════════════════════════════════════ */
+const LEVEL_INFO = [
+  {label:'LV.1',  name:'Seedling', subtitle:'Village',       gridCols:6,  gridRows:5},
+  {label:'LV.2',  name:'Sprout',   subtitle:'Township',      gridCols:7,  gridRows:6},
+  {label:'LV.3',  name:'Grove',    subtitle:'Small City',    gridCols:8,  gridRows:7},
+  {label:'LV.4',  name:'Canopy',   subtitle:'Urban Core',    gridCols:9,  gridRows:7},
+  {label:'LV.5',  name:'Nexus',    subtitle:'Metropolis',    gridCols:10, gridRows:8},
+  {label:'LV.6',  name:'Arcadia',  subtitle:'Smart City',    gridCols:11, gridRows:8},
+  {label:'LV.7',  name:'Pinnacle', subtitle:'Eco Capital',   gridCols:12, gridRows:9},
+  {label:'LV.8',  name:'Zenith',   subtitle:'Megacity',      gridCols:13, gridRows:9},
+  {label:'LV.9',  name:'Apex',     subtitle:'Supercity',     gridCols:14, gridRows:10},
+  {label:'LV.10', name:'Utopia',   subtitle:'Neocity Prime', gridCols:16, gridRows:12},
+];
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('nc_history') || '{}'); } catch(e) { return {}; }
+}
+
+function getUnlockedLevel() {
+  return parseInt(sessionStorage.getItem('nc_level') || '1', 10);
+}
+
+function formatDate(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}) + ' · ' + d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+}
+
+/* ════════════════════════════════════════════════════
+   BUILD PROGRESS RIBBON
+════════════════════════════════════════════════════ */
+function buildRibbon() {
+  const ribbon = document.getElementById('progress-ribbon');
+  ribbon.innerHTML = '';
+  const unlocked = getUnlockedLevel();
+
+  LEVEL_INFO.forEach((lv, i) => {
+    const num = i + 1;
+    const isCompleted = num < unlocked;
+    const isCurrent = num === unlocked;
+    const isLocked = num > unlocked;
+
+    if (i > 0) {
+      const line = document.createElement('div');
+      line.className = `pr-line ${isCompleted || isCurrent ? 'done-line' : 'pending-line'}`;
+      ribbon.appendChild(line);
+    }
+
+    const node = document.createElement('div');
+    node.className = 'pr-node';
+    node.title = `${lv.label} — ${lv.name}`;
+    node.onclick = () => {
+      document.getElementById(`card-${num}`).scrollIntoView({behavior:'smooth', block:'center'});
+    };
+
+    const pipClass = isCompleted ? 'done' : isCurrent ? 'current' : 'locked';
+    const inner = isLocked
+      ? `<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="8" height="6" rx="1"/><path d="M4 5V3.5a2 2 0 014 0V5" stroke-linecap="round"/></svg>`
+      : (isCompleted ? '✓' : lv.label.replace('LV.',''));
+
+    node.innerHTML = `
+      <div class="pr-pip ${pipClass}">${inner}</div>
+      <div class="pr-lbl ${isCurrent ? 'active-lbl' : ''}">${lv.name}</div>
+    `;
+    ribbon.appendChild(node);
+  });
+}
+
+/* ════════════════════════════════════════════════════
+   BUILD CARDS
+════════════════════════════════════════════════════ */
+function buildCards() {
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = '';
+  const history = getHistory();
+  const unlocked = getUnlockedLevel();
+
+  LEVEL_INFO.forEach((lv, i) => {
+    const num = i + 1;
+    const rec = history[num];
+    const isCompleted = num < unlocked;   // beaten if level number < current unlocked level
+    const isCurrent = num === unlocked;
+    const isLocked = num > unlocked;
+
+    const card = document.createElement('div');
+    card.id = `card-${num}`;
+    card.style.animationDelay = `${i * 0.04}s`;
+
+    if (isLocked) {
+      card.className = 'lv-card state-locked';
+      card.innerHTML = `
+        <div class="lv-card-accent"></div>
+        <div class="lv-locked-body">
+          <div class="lv-lock-icon">🔒</div>
+          <div class="lv-lock-text">${lv.label} · ${lv.name}</div>
+          <div class="lv-lock-sub">Complete ${LEVEL_INFO[i-1]?.name || 'previous level'} to unlock</div>
+        </div>
+      `;
+    } else if (isCurrent) {
+      card.className = 'lv-card state-unlocked';
+      card.onclick = () => goToLevel(num);
+      const { gridCols, gridRows } = lv;
+      card.innerHTML = `
+        <div class="lv-card-accent"></div>
+        <div class="lv-card-body">
+          <div class="lv-head">
+            <div class="lv-num">${lv.label}</div>
+            <div class="lv-name-wrap">
+              <div class="lv-name">${lv.name}</div>
+              <div class="lv-subtitle">${lv.subtitle}</div>
+            </div>
+          </div>
+          <div class="lv-badge" style="background:rgba(0,229,255,.05);border-color:rgba(0,229,255,.2)">
+            <div class="badge-icon">🔓</div>
+            <div class="badge-text">
+              <div class="badge-title" style="color:var(--nc)">READY TO PLAY</div>
+              <div class="badge-sub">Grid: ${gridCols}×${gridRows} · ${gridCols * gridRows} cells available</div>
+            </div>
+          </div>
+          <div style="font-size:.62rem;color:var(--muted);letter-spacing:.08em;line-height:1.7;margin-bottom:.8rem">
+            Your next mission awaits. Build a sustainable ${lv.subtitle.toLowerCase()} from scratch and earn your place in the archives.
+          </div>
+        </div>
+        <button class="lv-unlock-cta" onclick="goToLevel(${num})">
+          <span class="lv-unlock-pulse"></span>▶ Enter Mission ${lv.label} →
+        </button>
+      `;
+    } else if (rec) {
+      // Completed WITH recorded stats
+      const resultClass = rec.result === 'high' ? 'result-high' : rec.result === 'moderate' ? 'result-moderate' : 'result-polluted';
+      const badgeIcon = rec.result === 'high' ? '🏆' : rec.result === 'moderate' ? '✅' : '⚠️';
+      const badgeTitle = rec.result === 'high' ? 'ECO CHAMPION — HIGH GREEN' : rec.result === 'moderate' ? 'LEVEL CLEARED — MODERATE' : 'FAILED — TOO POLLUTED';
+      const badgeSub = `Green ${rec.green}% · Pollution ${rec.pollute}% · ${rec.cellsUsed} cells built`;
+
+      const elTags = Object.values(rec.elements || {}).slice(0, 8)
+        .map(e => `<span class="lv-el-tag">${e.icon} ${e.name} ×${e.count}</span>`).join('');
+
+      card.className = `lv-card ${resultClass}`;
+      card.innerHTML = `
+        <div class="lv-card-accent"></div>
+        <div class="lv-card-body">
+          <div class="lv-head">
+            <div class="lv-num">${lv.label}</div>
+            <div class="lv-name-wrap">
+              <div class="lv-name">${lv.name}</div>
+              <div class="lv-subtitle">${lv.subtitle}</div>
+            </div>
+          </div>
+          <div class="lv-badge">
+            <div class="badge-icon">${badgeIcon}</div>
+            <div class="badge-text">
+              <div class="badge-title">${badgeTitle}</div>
+              <div class="badge-sub">${badgeSub}</div>
+            </div>
+          </div>
+          <div class="lv-stats">
+            <div class="lv-stat-row">
+              <span class="lv-stat-lbl">🌿 Green</span>
+              <div class="lv-stat-bar-wrap"><div class="lv-stat-bar" style="width:${rec.green}%;background:var(--ng)"></div></div>
+              <span class="lv-stat-val" style="color:var(--ng)">${rec.green}%</span>
+            </div>
+            <div class="lv-stat-row">
+              <span class="lv-stat-lbl">🏭 Pollution</span>
+              <div class="lv-stat-bar-wrap"><div class="lv-stat-bar" style="width:${rec.pollute}%;background:var(--nr)"></div></div>
+              <span class="lv-stat-val" style="color:var(--nr)">${rec.pollute}%</span>
+            </div>
+            <div class="lv-stat-row">
+              <span class="lv-stat-lbl">⚡ Energy</span>
+              <div class="lv-stat-bar-wrap"><div class="lv-stat-bar" style="width:${rec.energy}%;background:var(--ny)"></div></div>
+              <span class="lv-stat-val" style="color:var(--ny)">${rec.energy}%</span>
+            </div>
+            <div class="lv-stat-row">
+              <span class="lv-stat-lbl">🏙 Density</span>
+              <div class="lv-stat-bar-wrap"><div class="lv-stat-bar" style="width:${rec.density}%;background:var(--nc)"></div></div>
+              <span class="lv-stat-val" style="color:var(--nc)">${rec.density}%</span>
+            </div>
+          </div>
+          <div class="lv-elements">${elTags || '<span style="font-size:.58rem;color:var(--muted)">No elements recorded</span>'}</div>
+          <div class="lv-meta">
+            <div class="lv-meta-item">Grid <span>${rec.gridSize || lv.gridCols+'×'+lv.gridRows}</span></div>
+            <div class="lv-meta-item">Pop <span>${rec.population ? Number(rec.population).toLocaleString() : '—'}</span></div>
+            <div class="lv-meta-item">Trees <span>${rec.trees ? Number(rec.trees).toLocaleString() : '—'}</span></div>
+            <div class="lv-meta-item" style="font-size:.48rem;color:rgba(180,210,240,.3)">${formatDate(rec.timestamp)}</div>
+          </div>
+        </div>
+        <button class="lv-unlock-cta" style="border-color:rgba(0,255,136,.35);color:var(--ng);box-shadow:var(--gg)" onclick="goToLevel(${num})">
+          ↺ Replay ${lv.label} — ${lv.name}
+        </button>
+      `;
+    } else {
+      // Completed but NO recorded data — still show replay button
+      card.className = 'lv-card result-moderate';
+      card.innerHTML = `
+        <div class="lv-card-accent"></div>
+        <div class="lv-card-body">
+          <div class="lv-head">
+            <div class="lv-num">${lv.label}</div>
+            <div class="lv-name-wrap">
+              <div class="lv-name">${lv.name}</div>
+              <div class="lv-subtitle">${lv.subtitle}</div>
+            </div>
+          </div>
+          <div class="lv-badge" style="background:rgba(255,230,0,.05);border-color:rgba(255,230,0,.18)">
+            <div class="badge-icon">📋</div>
+            <div class="badge-text">
+              <div class="badge-title" style="color:var(--ny)">CLEARED — NO DATA</div>
+              <div class="badge-sub">Completed before stats tracking. Replay to save a record.</div>
+            </div>
+          </div>
+          <div style="font-size:.6rem;color:var(--muted);letter-spacing:.06em;line-height:1.65;padding:.2rem 0 .5rem">
+            Grid: ${lv.gridCols}×${lv.gridRows} · ${lv.gridCols * lv.gridRows} cells available
+          </div>
+        </div>
+        <button class="lv-unlock-cta" style="border-color:rgba(255,230,0,.4);color:var(--ny);box-shadow:var(--gy)" onclick="goToLevel(${num})">
+          ↺ Replay ${lv.label} — ${lv.name}
+        </button>
+      `;
+    }
+
+    grid.appendChild(card);
+  });
+}
+
+/* ════════════════════════════════════════════════════
+   HERO TEXT + BOTTOM BAR
+════════════════════════════════════════════════════ */
+function updateHero() {
+  const unlocked = getUnlockedLevel();
+  const history = getHistory();
+  // Completed = number of levels already beaten (all levels before current)
+  const completed = Math.max(0, Math.min(unlocked - 1, LEVEL_INFO.length));
+  const sub = document.getElementById('hero-sub-text');
+  const bbProg = document.getElementById('bb-progress-text');
+
+  if (completed === 0) {
+    sub.textContent = 'No missions completed yet. Begin your first mission to start building your legacy.';
+    bbProg.textContent = `0/${LEVEL_INFO.length} levels completed · LV.1 active`;
+  } else {
+    const wins = Object.values(history).filter(r => r.result !== 'polluted').length;
+    const allDone = unlocked > LEVEL_INFO.length;
+    sub.textContent = `${completed} mission${completed > 1 ? 's' : ''} completed · ${wins} eco pass${wins !== 1 ? 'es' : ''} · ${allDone ? 'All levels mastered! 🏆' : `Level ${unlocked} currently unlocked`}`;
+    bbProg.textContent = `${completed}/${LEVEL_INFO.length} levels completed · ${allDone ? 'Champion!' : `LV.${unlocked} active`}`;
+  }
+
+  const playBtn = document.getElementById('play-btn');
+  const lv = LEVEL_INFO[Math.min(unlocked, LEVEL_INFO.length) - 1];
+  if (unlocked > LEVEL_INFO.length) {
+    playBtn.textContent = '🏆 All Levels Done';
+    playBtn.disabled = true;
+    playBtn.style.opacity = '.5';
+  } else {
+    playBtn.textContent = `▶ Play ${lv.label} — ${lv.name}`;
+  }
+}
+
+function goToCurrentLevel() {
+  window.location.href = 'neocity-builder.html';
+}
+
+function goToLevel(num) {
+  // Store the replay target separately; builder will restore nc_level after replay
+  const currentUnlocked = parseInt(sessionStorage.getItem('nc_level') || '1', 10);
+  sessionStorage.setItem('nc_level', String(num));
+  sessionStorage.setItem('nc_max_level', String(currentUnlocked));
+  window.location.href = 'neocity-builder.html';
+}
+
+/* ════════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════════ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ════════════════════════════════════════════════════
+   NEOBOT AI
+════════════════════════════════════════════════════ */
+let neobotOpen = false;
+let neobotHistory = [];
+
+const NEOBOT_SYSTEM = `You are NeoBot, an AI city planning advisor inside NeoCity — a futuristic city-building game focused on sustainability and the UN Sustainable Development Goals (SDG 7, 9, 11, 13).
+
+NeoCity has 10 levels: Seedling (Village), Sprout (Township), Grove (Small City), Canopy (Urban Core), Nexus (Metropolis), Arcadia (Smart City), Pinnacle (Eco Capital), Zenith (Megacity), Apex (Supercity), Utopia (Neocity Prime).
+
+Grid sizes grow from 6×5 at Level 1 to 16×12 at Level 10.
+
+Elements available (unlock progressively):
+- Level 1: House, Road, Park, Hospital, School, Solar Panel, Factory
+- Level 2: Windmill, Market, Garden, Bike Lane
+- Level 3: Recycle Centre, EV Station, Subway, Greenhouse
+- Level 4: Smart House, Water Plant, Solar Farm
+- Level 5: Arcology, Hyperloop
+- Level 6: Data Centre, Tidal Plant, Rooftop Garden
+- Level 7: Vertical Farm, Maglev Rail, Bio Dome
+- Level 8: Fusion Plant, Sky Bridge, Carbon Capture
+- Level 9: Space Solar Array, AI City Hub
+- Level 10: Eco Tower, Utopia Park
+
+City scoring:
+- Green score: raised by parks, gardens, trees planted, solar, green buildings. Lowered by factories, heavy vehicles.
+- Pollution: raised by factories, roads, many vehicles. Lowered by parks, recycling, EVs, subways, carbon capture.
+- Energy: raised by solar/wind/fusion. Lowered by hospitals, schools, data centres.
+- Density: raised by housing, markets, subways, arcologies.
+
+Results: "High Green" = green ≥ 65% and pollution ≤ 30%; "Moderate" = green ≥ 35% and pollution ≤ 55%; "Polluted" = failed.
+
+Every 1,000 trees = +2 green, -1 pollution. Every 10,000 vehicles = +3 pollution, -1 green.
+
+Be concise, friendly, and tactical. Use bullet points for tips. Address the player as "Commander". Keep responses under 150 words unless a detailed explanation is genuinely needed.`;
+
+function openNeobot() {
+  neobotOpen = true;
+  document.getElementById('neobot-panel').classList.add('open');
+  document.getElementById('neobot-trigger').style.display = 'none';
+
+  if (neobotHistory.length === 0) {
+    // Build welcome greeting with context
+    const unlocked = getUnlockedLevel();
+    const history = getHistory();
+    const completed = Object.keys(history).length;
+    const lv = LEVEL_INFO[Math.min(unlocked, LEVEL_INFO.length) - 1];
+    const greeting = completed > 0
+      ? `Welcome back, Commander! I've reviewed your ${completed} completed mission${completed > 1 ? 's' : ''}. You're currently on **${lv.label} — ${lv.name}**. How can I help you build a better city today?`
+      : `Hello Commander! I'm NeoBot, your AI city advisor. You're about to begin **${lv.label} — ${lv.name}** (${lv.gridCols}×${lv.gridRows} grid). I can help you plan your city, optimize for green score, or explain how elements work. What would you like to know?`;
+
+    addBotMessage(greeting);
+  }
+
+  setTimeout(() => {
+    const msgs = document.getElementById('nb-messages');
+    msgs.scrollTop = msgs.scrollHeight;
+    document.getElementById('nb-input').focus();
+  }, 100);
+}
+
+function closeNeobot() {
+  neobotOpen = false;
+  document.getElementById('neobot-panel').classList.remove('open');
+  document.getElementById('neobot-trigger').style.display = 'flex';
+}
+
+function addBotMessage(text) {
+  const msgs = document.getElementById('nb-messages');
+  const div = document.createElement('div');
+  div.className = 'nb-msg bot';
+  div.innerHTML = `
+    <div class="nb-msg-avatar bot-avatar">
+      <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M6 7.5c0-.8.9-1.5 2-1.5s2 .7 2 1.5" stroke-linecap="round"/><circle cx="6" cy="6" r=".6" fill="currentColor" stroke="none"/><circle cx="10" cy="6" r=".6" fill="currentColor" stroke="none"/></svg>
+    </div>
+    <div class="nb-bubble bot-bubble">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g,'<br/>')}</div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUserMessage(text) {
+  const msgs = document.getElementById('nb-messages');
+  const div = document.createElement('div');
+  div.className = 'nb-msg user';
+  div.innerHTML = `
+    <div class="nb-msg-avatar user-avatar">🧑</div>
+    <div class="nb-bubble user-bubble">${text}</div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('nb-messages');
+  const div = document.createElement('div');
+  div.className = 'nb-msg bot';
+  div.id = 'nb-typing';
+  div.innerHTML = `
+    <div class="nb-msg-avatar bot-avatar">
+      <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg>
+    </div>
+    <div class="nb-bubble bot-bubble nb-typing">
+      <div class="nb-dot"></div><div class="nb-dot"></div><div class="nb-dot"></div>
+    </div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('nb-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  sendPrompt(msg);
+}
+
+function sendPrompt(text) {
+  addUserMessage(text);
+  document.getElementById('nb-send-btn').disabled = true;
+
+  // Build context from player's history
+  const history = getHistory();
+  const unlocked = getUnlockedLevel();
+  const histSummary = Object.values(history).map(r =>
+    `Level ${r.level} (${r.levelName}): Green ${r.green}%, Pollution ${r.pollute}%, Energy ${r.energy}%, Density ${r.density}% — result: ${r.result}`
+  ).join('\n') || 'No completed levels yet.';
+
+  neobotHistory.push({role:'user', content: text});
+
+  const typingEl = showTyping();
+
+  const messages = [
+    { role: 'user', content: `[Player context]\nCurrent level unlocked: ${unlocked}\nPlayer history:\n${histSummary}\n\n[Player question]\n${text}` }
+  ];
+  // Include recent back-and-forth (last 4 pairs max)
+  const recentHistory = neobotHistory.slice(-8);
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: NEOBOT_SYSTEM,
+      messages: recentHistory,
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    typingEl.remove();
+    const reply = data.content?.map(c => c.text || '').join('') || 'I had trouble thinking of an answer. Try rephrasing your question, Commander.';
+    neobotHistory.push({role:'assistant', content: reply});
+    addBotMessage(reply);
+  })
+  .catch(err => {
+    typingEl.remove();
+    addBotMessage('⚠️ Connection to NeoBot intelligence interrupted. Check your network and try again, Commander.');
+  })
+  .finally(() => {
+    document.getElementById('nb-send-btn').disabled = false;
+    document.getElementById('nb-input').focus();
+  });
+}
+
+/* ════════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  buildRibbon();
+  buildCards();
+  updateHero();
+
+  // Show unlock toast if just arrived from builder
+  const unlocked = getUnlockedLevel();
+  if (unlocked > 1 && unlocked <= LEVEL_INFO.length) {
+    const lv = LEVEL_INFO[unlocked - 1];
+    setTimeout(() => showToast(`🔓 Level ${unlocked} Unlocked — ${lv.name}: ${lv.subtitle}!`), 600);
+  } else if (unlocked > LEVEL_INFO.length) {
+    setTimeout(() => showToast('🏆 All 10 levels mastered! NeoCity Ultimate Champion!'), 600);
+  }
+});
+</script>
+</body>
+</html>

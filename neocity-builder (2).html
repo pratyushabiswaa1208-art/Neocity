@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NeoCity — City Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ng:#00ff88;--nc:#00e5ff;--ny:#ffe600;--nr:#ff4d6d;--np:#a855f7;
+  --dark:#04080f;--panel:rgba(6,20,38,0.92);--border:rgba(0,229,255,0.18);
+  --bright:#e8f4ff;--muted:rgba(180,210,240,0.55);--ibg:rgba(0,20,45,0.7);
+  --gg:0 0 14px rgba(0,255,136,0.4),0 0 40px rgba(0,255,136,0.12);
+  --gc:0 0 14px rgba(0,229,255,0.4),0 0 40px rgba(0,229,255,0.12);
+}
+html,body{height:100%;font-family:'Exo 2',sans-serif;background:var(--dark);color:var(--bright);overflow:hidden}
+
+/* ── BACKGROUND ── */
+.bg-scene{position:fixed;inset:0;z-index:0;pointer-events:none}
+.bg-sky{position:absolute;inset:0;background:linear-gradient(180deg,#000408 0%,#020c1a 40%,#031a2e 70%,#041f38 100%)}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.03) 1px,transparent 1px);background-size:40px 40px}
+.scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);pointer-events:none;z-index:1}
+
+/* ── LAYOUT ── */
+.app{position:relative;z-index:10;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.2rem;border-bottom:1px solid var(--border);background:rgba(4,8,15,0.92);backdrop-filter:blur(16px);flex-shrink:0;gap:.5rem;z-index:50}
+.tb-logo{font-family:'Orbitron',monospace;font-size:.85rem;font-weight:900;letter-spacing:.18em;white-space:nowrap}
+.tb-logo span{color:var(--ng);text-shadow:var(--gg)}
+.tb-title{font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+.tb-right{display:flex;align-items:center;gap:.6rem}
+.tb-level{font-family:'Orbitron',monospace;font-size:.6rem;font-weight:700;letter-spacing:.14em;color:var(--ny);border:1px solid rgba(255,230,0,0.3);border-radius:2px;padding:.2rem .5rem;text-transform:uppercase}
+.tb-back{background:none;border:1px solid rgba(0,229,255,0.22);border-radius:2px;padding:.28rem .65rem;font-family:'Exo 2',sans-serif;font-size:.62rem;letter-spacing:.1em;color:var(--muted);cursor:pointer;transition:all .2s;text-transform:uppercase}
+.tb-back:hover{border-color:rgba(0,229,255,0.5);color:var(--nc)}
+
+/* ── ELEMENT TOOLBAR (TOP) ── */
+.element-bar{display:flex;align-items:center;gap:6px;padding:.5rem 1rem;border-bottom:1px solid var(--border);background:rgba(4,8,15,0.88);backdrop-filter:blur(12px);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.element-bar::-webkit-scrollbar{display:none}
+.el-group-label{font-size:.52rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);white-space:nowrap;margin-right:4px;padding-right:4px;border-right:1px solid var(--border)}
+.el-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:.4rem .5rem;border:1px solid var(--border);border-radius:3px;background:var(--ibg);cursor:pointer;transition:all .22s;position:relative;min-width:52px;flex-shrink:0}
+.el-btn:hover{border-color:rgba(0,255,136,0.4);background:rgba(0,255,136,0.06)}
+.el-btn.active{border-color:var(--ng);background:rgba(0,255,136,0.1);box-shadow:var(--gg)}
+.el-btn.eraser-active{border-color:var(--nr);background:rgba(255,77,109,0.1);box-shadow:0 0 12px rgba(255,77,109,0.3)}
+.el-btn .el-icon{font-size:1.3rem;line-height:1}
+.el-btn .el-name{font-size:.48rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.el-btn.active .el-name{color:var(--ng)}
+.el-count{position:absolute;top:2px;right:3px;font-family:'Orbitron',monospace;font-size:.44rem;color:var(--ng);font-weight:700}
+.el-max{color:var(--nr) !important}
+.el-locked{opacity:0.35;cursor:not-allowed}
+.el-locked .el-icon{filter:grayscale(1)}
+.el-locked::after{content:'🔒';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1rem}
+.el-sep{width:1px;height:36px;background:var(--border);flex-shrink:0;margin:0 2px}
+
+/* ── MAIN AREA ── */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* ── GRID CANVAS ── */
+.grid-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.grid-scroll{flex:1;overflow:auto;padding:12px;scrollbar-width:thin;scrollbar-color:rgba(0,229,255,0.2) transparent}
+.city-grid{display:grid;gap:2px;width:fit-content;margin:0 auto;user-select:none}
+.cell{width:48px;height:48px;border:1px solid rgba(0,229,255,0.08);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:crosshair;transition:border-color .15s,background .15s;position:relative;background:rgba(0,20,45,0.3)}
+.cell:hover{border-color:rgba(0,255,136,0.35);background:rgba(0,255,136,0.05)}
+.cell.filled{cursor:crosshair;background:rgba(0,20,45,0.6)}
+.cell.filled:hover{border-color:rgba(255,77,109,0.4);background:rgba(255,77,109,0.05)}
+.cell-label{position:absolute;bottom:1px;right:2px;font-size:.38rem;color:rgba(255,255,255,0.3);line-height:1}
+
+/* ── SIDE PANEL ── */
+.side-panel{width:240px;flex-shrink:0;border-left:1px solid var(--border);background:rgba(4,8,15,0.9);display:flex;flex-direction:column;overflow:hidden}
+.sp-section{padding:.8rem .9rem;border-bottom:1px solid var(--border)}
+.sp-title{font-family:'Orbitron',monospace;font-size:.58rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:.65rem;display:flex;align-items:center;gap:6px}
+.sp-title::before{content:'';width:3px;height:10px;background:var(--ng);border-radius:1px;flex-shrink:0}
+
+/* Input fields */
+.sp-field{margin-bottom:.7rem}
+.sp-label{font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;display:block}
+.sp-input-wrap{position:relative}
+.sp-input-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:.85rem;pointer-events:none}
+.sp-input{width:100%;background:var(--ibg);border:1px solid var(--border);border-radius:2px;padding:.55rem .7rem .55rem 2rem;font-family:'Exo 2',sans-serif;font-size:.82rem;color:var(--bright);outline:none;transition:border-color .2s,box-shadow .2s}
+.sp-input:focus{border-color:rgba(0,229,255,0.45);box-shadow:var(--gc)}
+.sp-input::placeholder{color:rgba(180,210,240,0.2);font-size:.78rem}
+
+/* Gender select */
+.gender-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.7rem}
+.gender-btn{background:var(--ibg);border:1px solid var(--border);border-radius:2px;padding:.45rem;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:.68rem;letter-spacing:.06em;color:var(--muted);transition:all .2s}
+.gender-btn.active{border-color:var(--nc);background:rgba(0,229,255,0.08);color:var(--nc)}
+
+/* Stats display */
+.stat-rows{display:flex;flex-direction:column;gap:6px}
+.stat-row{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.stat-row-label{font-size:.62rem;letter-spacing:.08em;color:var(--muted)}
+.stat-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+.stat-bar{height:100%;border-radius:3px;transition:width .4s ease,background .4s}
+.stat-val{font-family:'Orbitron',monospace;font-size:.6rem;font-weight:700;min-width:28px;text-align:right}
+
+/* Elements summary */
+.el-summary{display:flex;flex-wrap:wrap;gap:4px;margin-top:.2rem}
+.el-tag{font-size:.55rem;padding:2px 5px;border-radius:2px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.18);color:var(--ng);letter-spacing:.06em}
+
+/* Pollution indicator */
+.pollution-badge{display:flex;align-items:center;gap:8px;padding:.5rem .7rem;border-radius:2px;margin-bottom:.6rem}
+.pb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;animation:pdot 2s infinite}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.3}}
+.pb-label{font-family:'Orbitron',monospace;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.pb-sub{font-size:.6rem;color:var(--muted);letter-spacing:.04em;margin-top:1px}
+
+/* View City Button */
+.btn-view-city{width:100%;background:transparent;border:1.5px solid var(--ng);border-radius:2px;padding:.75rem;font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ng);cursor:pointer;position:relative;overflow:hidden;transition:all .25s;box-shadow:var(--gg);margin-top:.2rem}
+.btn-view-city::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(0,255,136,0.1),transparent);transform:translateX(-100%);transition:transform .4s}
+.btn-view-city:hover::before{transform:translateX(100%)}
+.btn-view-city:hover{background:rgba(0,255,136,0.1);color:#fff;text-shadow:0 0 12px var(--ng)}
+.btn-view-city:active{transform:scale(.97)}
+
+/* scroll in side panel */
+.side-scroll{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,229,255,0.15) transparent}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:1.2rem;left:50%;transform:translateX(-50%) translateY(-70px);background:rgba(4,20,40,.96);border:1px solid rgba(0,229,255,0.3);border-radius:2px;padding:.5rem 1.2rem;font-size:.72rem;color:var(--nc);letter-spacing:.08em;transition:transform .35s cubic-bezier(.16,1,.3,1);z-index:999;white-space:nowrap;box-shadow:var(--gc)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── CITY VIEW MODAL ── */
+#city-view-modal{position:fixed;inset:0;z-index:200;display:none;background:#000}
+#city-view-modal.open{display:block;animation:modal-in .5s cubic-bezier(.16,1,.3,1) both}
+@keyframes modal-in{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:scale(1)}}
+
+.cv-topbar{position:absolute;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:.7rem 1.2rem;background:linear-gradient(180deg,rgba(0,0,0,0.8),transparent);backdrop-filter:blur(4px)}
+.cv-title{font-family:'Orbitron',monospace;font-size:.8rem;font-weight:800;letter-spacing:.2em;color:var(--bright)}
+.cv-title span{color:var(--ng)}
+.cv-close{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:2px;padding:.35rem .8rem;font-family:'Exo 2',sans-serif;font-size:.68rem;color:var(--bright);cursor:pointer;transition:all .2s;letter-spacing:.08em}
+.cv-close:hover{background:rgba(255,77,109,0.2);border-color:var(--nr);color:var(--nr)}
+
+/* 3D Scene Canvas */
+#city-canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* HUD overlay on city view */
+.cv-hud{position:absolute;bottom:0;left:0;right:0;z-index:10;padding:1rem 1.4rem 1.4rem;background:linear-gradient(0deg,rgba(0,0,0,0.88),transparent);display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.hud-stats{display:flex;gap:1.2rem;flex-wrap:wrap}
+.hud-stat{text-align:center}
+.hud-stat-val{font-family:'Orbitron',monospace;font-size:1rem;font-weight:800;display:block}
+.hud-stat-lbl{font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.hud-pollution{display:flex;align-items:center;gap:10px;padding:.5rem 1rem;border-radius:2px;border:1px solid;font-family:'Orbitron',monospace;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.hud-figure{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);text-align:center;animation:figure-walk 3s ease-in-out infinite}
+@keyframes figure-walk{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}
+.hud-figure.polluted{animation:figure-sick 0.35s ease-in-out infinite}
+@keyframes figure-sick{0%{transform:translateX(-50%) rotate(-4deg) translateY(0)}25%{transform:translateX(-50%) rotate(4deg) translateY(2px)}50%{transform:translateX(-50%) rotate(-3deg) translateY(0)}75%{transform:translateX(-50%) rotate(3deg) translateY(2px)}100%{transform:translateX(-50%) rotate(-4deg) translateY(0)}}
+.figure-wrap{position:relative;display:inline-block}
+.figure-emoji{font-size:3.5rem;display:block;transition:filter .4s}
+.figure-emoji.green-glow{filter:drop-shadow(0 0 12px rgba(0,255,136,0.6)) drop-shadow(0 0 24px rgba(0,255,136,0.3))}
+.figure-emoji.sick-filter{filter:drop-shadow(0 0 10px rgba(255,77,109,0.7)) drop-shadow(0 0 20px rgba(180,50,0,0.5)) saturate(0.6) sepia(0.4)}
+.figure-emoji.moderate-filter{filter:drop-shadow(0 0 10px rgba(255,230,0,0.5)) saturate(0.85)}
+.figure-face{position:absolute;top:-10px;right:-10px;font-size:1.4rem;animation:face-pulse 1.2s ease-in-out infinite;line-height:1}
+@keyframes face-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+.smog-ring{position:absolute;inset:-12px;border-radius:50%;border:2px dashed rgba(180,80,20,0.55);animation:smog-spin 3s linear infinite;pointer-events:none}
+.smog-ring2{position:absolute;inset:-22px;border-radius:50%;border:1.5px dashed rgba(160,60,10,0.3);animation:smog-spin 5s linear infinite reverse;pointer-events:none}
+@keyframes smog-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.figure-label{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ng);margin-top:6px;text-shadow:0 0 8px var(--ng);transition:color .3s,text-shadow .3s}
+
+/* Result button */
+.btn-result{background:transparent;border:2px solid var(--ny);border-radius:2px;padding:.7rem 1.6rem;font-family:'Orbitron',monospace;font-size:.7rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ny);cursor:pointer;transition:all .25s;position:relative;overflow:hidden;box-shadow:0 0 18px rgba(255,230,0,0.3)}
+.btn-result:hover{background:rgba(255,230,0,0.1);color:#fff;box-shadow:0 0 30px rgba(255,230,0,0.5)}
+
+/* City scene backgrounds */
+.city-bg-green{background:radial-gradient(ellipse at 50% 60%,#0a2e0a 0%,#061808 40%,#020a04 100%)}
+.city-bg-moderate{background:radial-gradient(ellipse at 50% 60%,#1a2a0a 0%,#0d1a06 40%,#040a02 100%)}
+.city-bg-polluted{background:radial-gradient(ellipse at 50% 60%,#2a1a04 0%,#1a0e02 40%,#0a0602 100%)}
+
+/* Result Modal */
+#result-modal{position:fixed;inset:0;z-index:300;display:none;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center}
+#result-modal.open{display:flex;animation:modal-in .4s both}
+.result-panel{background:rgba(6,20,38,0.97);border:1px solid var(--border);border-radius:2px;width:90%;max-width:500px;overflow:hidden;position:relative}
+.result-panel::before,.result-panel::after{content:'';position:absolute;width:20px;height:20px;border-color:var(--ng);border-style:solid}
+.result-panel::before{top:-1px;left:-1px;border-width:2px 0 0 2px}
+.result-panel::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+.result-top-bar{height:3px;background:linear-gradient(90deg,transparent,var(--nc) 20%,var(--ng) 50%,var(--nc) 80%,transparent)}
+.result-body{padding:1.8rem}
+.result-icon{font-size:3.5rem;text-align:center;display:block;margin-bottom:.8rem;animation:pop-in .5s cubic-bezier(.16,1,.3,1) both}
+@keyframes pop-in{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}
+.result-title{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:900;letter-spacing:.14em;text-align:center;margin-bottom:.3rem;text-transform:uppercase}
+.result-sub{font-size:.78rem;color:var(--muted);text-align:center;letter-spacing:.06em;line-height:1.6;margin-bottom:1.4rem}
+.result-bars{display:flex;flex-direction:column;gap:8px;margin-bottom:1.4rem}
+.rb-row{display:flex;align-items:center;gap:10px}
+.rb-lbl{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);width:80px;flex-shrink:0}
+.rb-wrap{flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden}
+.rb-fill{height:100%;border-radius:4px;transition:width .8s .3s ease}
+.rb-val{font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;width:32px;text-align:right}
+.result-verdict{padding:.8rem;border-radius:2px;text-align:center;margin-bottom:1.2rem;border:1px solid}
+.verdict-text{font-family:'Orbitron',monospace;font-size:.75rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.verdict-sub{font-size:.7rem;color:var(--muted);margin-top:.3rem;letter-spacing:.04em}
+.result-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rbtn{background:transparent;border:1px solid;border-radius:2px;padding:.62rem;font-family:'Orbitron',monospace;font-size:.58rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.rbtn-retry{border-color:var(--nc);color:var(--nc)}
+.rbtn-retry:hover{background:rgba(0,229,255,0.1);color:#fff}
+.rbtn-next{border-color:var(--ng);color:var(--ng)}
+.rbtn-next:hover{background:rgba(0,255,136,0.1);color:#fff}
+.rbtn-next:disabled{opacity:.3;cursor:not-allowed}
+
+/* Level unlock animation */
+.unlock-flash{position:fixed;inset:0;z-index:400;background:rgba(0,255,136,0.15);pointer-events:none;animation:flash-in .6s ease forwards;display:none}
+@keyframes flash-in{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+
+/* FLOATING info tooltips */
+.el-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:rgba(4,16,32,.96);border:1px solid rgba(0,229,255,0.25);border-radius:2px;padding:.3rem .5rem;font-size:.55rem;color:var(--nc);white-space:nowrap;letter-spacing:.06em;pointer-events:none;opacity:0;transition:opacity .15s;z-index:100}
+.el-btn:hover .el-tooltip{opacity:1}
+
+/* Responsive small screens */
+@media(max-width:700px){
+  .side-panel{width:200px}
+  .cell{width:38px;height:38px;font-size:1.1rem}
+}
+@media(max-width:550px){
+  .main{flex-direction:column}
+  .side-panel{width:100%;height:200px;border-left:none;border-top:1px solid var(--border);flex-direction:row;overflow-x:auto}
+  .side-scroll{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;height:100%}
+  .sp-section{min-width:180px;border-bottom:none;border-right:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-scene">
+  <div class="bg-sky"></div>
+  <div class="bg-grid"></div>
+</div>
+<div class="scanlines"></div>
+
+<div class="toast" id="toast"></div>
+<div class="unlock-flash" id="unlock-flash"></div>
+
+<!-- ═══════════════════════════ MAIN APP ═══════════════════════════ -->
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="tb-logo">NEO<span>CITY</span></div>
+      <div class="tb-title">City Builder</div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-level" id="tb-level-badge">LV.1 · Seedling</div>
+      <button class="tb-back" onclick="goBack()">← Dashboard</button>
+    </div>
+  </div>
+
+  <!-- ELEMENT TOOLBAR -->
+  <div class="element-bar" id="element-bar">
+    <!-- Built dynamically -->
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- GRID -->
+    <div class="grid-wrap">
+      <div class="grid-scroll">
+        <div class="city-grid" id="city-grid"></div>
+      </div>
+      <!-- Mini legend -->
+      <div style="display:flex;align-items:center;gap:1rem;padding:.4rem 1rem;border-top:1px solid var(--border);background:rgba(4,8,15,.7);font-size:.56rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;flex-shrink:0;flex-wrap:wrap">
+        <span>🖱 Click: Place element</span>
+        <span>🗑 Eraser: Remove</span>
+        <span id="grid-fill-info">Cells used: <span id="cells-used" style="color:var(--ng);font-family:'Orbitron',monospace">0</span> / <span id="cells-total" style="color:var(--muted)">0</span></span>
+      </div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="side-panel">
+      <div class="side-scroll">
+
+        <!-- Pollution indicator -->
+        <div class="sp-section">
+          <div class="sp-title">City Status</div>
+          <div class="pollution-badge" id="pollution-badge">
+            <div class="pb-dot" id="pb-dot"></div>
+            <div>
+              <div class="pb-label" id="pb-label">Calculating...</div>
+              <div class="pb-sub" id="pb-sub">Add elements to begin</div>
+            </div>
+          </div>
+          <div class="stat-rows" id="stat-rows">
+            <div class="stat-row">
+              <span class="stat-row-label">🌿 Green</span>
+              <div class="stat-bar-wrap"><div class="stat-bar" id="bar-green" style="width:0%;background:var(--ng)"></div></div>
+              <span class="stat-val" id="val-green" style="color:var(--ng)">0%</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-row-label">🏭 Pollution</span>
+              <div class="stat-bar-wrap"><div class="stat-bar" id="bar-pollute" style="width:0%;background:var(--nr)"></div></div>
+              <span class="stat-val" id="val-pollute" style="color:var(--nr)">0%</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-row-label">⚡ Energy</span>
+              <div class="stat-bar-wrap"><div class="stat-bar" id="bar-energy" style="width:0%;background:var(--ny)"></div></div>
+              <span class="stat-val" id="val-energy" style="color:var(--ny)">0%</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-row-label">🏙 Density</span>
+              <div class="stat-bar-wrap"><div class="stat-bar" id="bar-density" style="width:0%;background:var(--nc)"></div></div>
+              <span class="stat-val" id="val-density" style="color:var(--nc)">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- City info -->
+        <div class="sp-section">
+          <div class="sp-title">City Data</div>
+
+          <div style="font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem">Your Gender</div>
+          <div class="gender-row">
+            <button class="gender-btn active" id="gender-m" onclick="setGender('male')">👨 Male</button>
+            <button class="gender-btn" id="gender-f" onclick="setGender('female')">👩 Female</button>
+          </div>
+
+          <div class="sp-field">
+            <label class="sp-label">🚗 Vehicles in City</label>
+            <div class="sp-input-wrap">
+              <span class="sp-input-icon">🚗</span>
+              <input class="sp-input" type="number" id="vehicles-input" placeholder="e.g. 50000" min="0" max="9999999" oninput="updateStats()"/>
+            </div>
+          </div>
+
+          <div class="sp-field">
+            <label class="sp-label">👥 City Population</label>
+            <div class="sp-input-wrap">
+              <span class="sp-input-icon">👥</span>
+              <input class="sp-input" type="number" id="population-input" placeholder="e.g. 500000" min="0" max="99999999" oninput="updateStats()"/>
+            </div>
+          </div>
+
+          <div class="sp-field">
+            <label class="sp-label">🌳 Trees Planted</label>
+            <div class="sp-input-wrap">
+              <span class="sp-input-icon">🌳</span>
+              <input class="sp-input" type="number" id="trees-input" placeholder="e.g. 12000" min="0" max="9999999" oninput="updateStats()"/>
+            </div>
+            <div style="font-size:.55rem;color:rgba(0,255,136,0.5);margin-top:3px;letter-spacing:.06em">Every 1,000 trees = +2 green, −1 pollution</div>
+          </div>
+        </div>
+
+        <!-- Elements used -->
+        <div class="sp-section">
+          <div class="sp-title">Elements Placed</div>
+          <div class="el-summary" id="el-summary">
+            <span style="font-size:.62rem;color:var(--muted)">No elements yet</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- View City -->
+      <div style="padding:.75rem .9rem;border-top:1px solid var(--border);flex-shrink:0">
+        <button class="btn-view-city" onclick="viewCity()">⬡ View My City</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ CITY VIEW MODAL ═══════════════════════════ -->
+<div id="city-view-modal">
+  <canvas id="city-canvas"></canvas>
+
+  <!-- Top HUD -->
+  <div class="cv-topbar">
+    <div class="cv-title">NEO<span>CITY</span> — <span id="cv-city-name" style="color:var(--nc)">Your City</span></div>
+    <button class="cv-close" onclick="closeCityView()">✕ Close</button>
+  </div>
+
+  <!-- Character figure -->
+  <div class="hud-figure" id="hud-figure">
+    <div class="figure-wrap" id="figure-wrap">
+      <span class="figure-emoji" id="figure-emoji">🧑</span>
+      <span class="figure-face" id="figure-face" style="display:none"></span>
+      <div class="smog-ring" id="smog-ring" style="display:none"></div>
+      <div class="smog-ring2" id="smog-ring2" style="display:none"></div>
+    </div>
+    <div class="figure-label" id="figure-label">Exploring...</div>
+  </div>
+
+  <!-- Bottom HUD -->
+  <div class="cv-hud">
+    <div class="hud-stats">
+      <div class="hud-stat">
+        <span class="hud-stat-val" id="hud-pop" style="color:var(--nc)">—</span>
+        <span class="hud-stat-lbl">Population</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-stat-val" id="hud-veh" style="color:var(--ny)">—</span>
+        <span class="hud-stat-lbl">Vehicles</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-stat-val" id="hud-trees" style="color:var(--ng)">—</span>
+        <span class="hud-stat-lbl">Trees</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-stat-val" id="hud-green" style="color:var(--ng)">—</span>
+        <span class="hud-stat-lbl">Green Score</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-stat-val" id="hud-status" style="color:var(--ng)">—</span>
+        <span class="hud-stat-lbl">Status</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+      <div class="hud-pollution" id="hud-pollution-badge">
+        <span id="hud-pollution-icon">🌿</span>
+        <span id="hud-pollution-text">Eco City</span>
+      </div>
+      <button class="btn-result" onclick="showResult()">📊 View Results →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ RESULT MODAL ═══════════════════════════ -->
+<div id="result-modal">
+  <div class="result-panel">
+    <div class="result-top-bar"></div>
+    <div class="result-body">
+      <span class="result-icon" id="result-icon">🏆</span>
+      <div class="result-title" id="result-title">Level Complete!</div>
+      <div class="result-sub" id="result-sub">Your city scores have been calculated.</div>
+
+      <div class="result-bars">
+        <div class="rb-row">
+          <span class="rb-lbl">Green</span>
+          <div class="rb-wrap"><div class="rb-fill" id="rb-green" style="background:var(--ng)"></div></div>
+          <span class="rb-val" id="rbv-green" style="color:var(--ng)">0%</span>
+        </div>
+        <div class="rb-row">
+          <span class="rb-lbl">Pollution</span>
+          <div class="rb-wrap"><div class="rb-fill" id="rb-pollute" style="background:var(--nr)"></div></div>
+          <span class="rb-val" id="rbv-pollute" style="color:var(--nr)">0%</span>
+        </div>
+        <div class="rb-row">
+          <span class="rb-lbl">Energy</span>
+          <div class="rb-wrap"><div class="rb-fill" id="rb-energy" style="background:var(--ny)"></div></div>
+          <span class="rb-val" id="rbv-energy" style="color:var(--ny)">0%</span>
+        </div>
+        <div class="rb-row">
+          <span class="rb-lbl">Density</span>
+          <div class="rb-wrap"><div class="rb-fill" id="rb-density" style="background:var(--nc)"></div></div>
+          <span class="rb-val" id="rbv-density" style="color:var(--nc)">0%</span>
+        </div>
+      </div>
+
+      <div class="result-verdict" id="result-verdict">
+        <div class="verdict-text" id="verdict-text">CALCULATING...</div>
+        <div class="verdict-sub" id="verdict-sub"></div>
+      </div>
+
+      <div class="result-btns">
+        <button class="rbtn rbtn-retry" onclick="retryLevel()">↺ Retry</button>
+        <button class="rbtn rbtn-next" id="btn-next-level" onclick="nextLevel()">Next Level →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════════ */
+const LEVEL_INFO = [
+  {label:'LV.1',  name:'Seedling', subtitle:'Village',       gridCols:6,  gridRows:5},
+  {label:'LV.2',  name:'Sprout',   subtitle:'Township',      gridCols:7,  gridRows:6},
+  {label:'LV.3',  name:'Grove',    subtitle:'Small City',    gridCols:8,  gridRows:7},
+  {label:'LV.4',  name:'Canopy',   subtitle:'Urban Core',    gridCols:9,  gridRows:7},
+  {label:'LV.5',  name:'Nexus',    subtitle:'Metropolis',    gridCols:10, gridRows:8},
+  {label:'LV.6',  name:'Arcadia',  subtitle:'Smart City',    gridCols:11, gridRows:8},
+  {label:'LV.7',  name:'Pinnacle', subtitle:'Eco Capital',   gridCols:12, gridRows:9},
+  {label:'LV.8',  name:'Zenith',   subtitle:'Megacity',      gridCols:13, gridRows:9},
+  {label:'LV.9',  name:'Apex',     subtitle:'Supercity',     gridCols:14, gridRows:10},
+  {label:'LV.10', name:'Utopia',   subtitle:'Neocity Prime', gridCols:16, gridRows:12},
+];
+
+const MAX_PER_ELEMENT = 50;
+
+// Element definitions: {id, icon, name, green, pollution, energy, density, minLevel, tip}
+const ELEMENTS = [
+  // ── Level 1: Village basics ──
+  {id:'house',       icon:'🏠', name:'House',        green:2,  pollution:1,  energy:-1, density:5,  minLevel:1,  tip:'Basic housing unit'},
+  {id:'road',        icon:'🛣️', name:'Road',         green:-1, pollution:2,  energy:0,  density:2,  minLevel:1,  tip:'Connects your city'},
+  {id:'park',        icon:'🌳', name:'Park',         green:8,  pollution:-2, energy:0,  density:1,  minLevel:1,  tip:'Reduces pollution nearby'},
+  {id:'hospital',    icon:'🏥', name:'Hospital',     green:3,  pollution:1,  energy:-2, density:3,  minLevel:1,  tip:'Essential city service'},
+  {id:'school',      icon:'🏫', name:'School',       green:2,  pollution:0,  energy:-1, density:3,  minLevel:1,  tip:'Educates citizens'},
+  {id:'solar',       icon:'☀️', name:'Solar Panel',  green:6,  pollution:-3, energy:8,  density:0,  minLevel:1,  tip:'Clean energy source'},
+  {id:'factory',     icon:'🏭', name:'Factory',      green:-6, pollution:8,  energy:2,  density:4,  minLevel:1,  tip:'Economic engine, pollutes'},
+  // ── Level 2: Township ──
+  {id:'windmill',    icon:'💨', name:'Windmill',     green:5,  pollution:-2, energy:6,  density:0,  minLevel:2,  tip:'Wind energy'},
+  {id:'market',      icon:'🏪', name:'Market',       green:1,  pollution:2,  energy:-1, density:5,  minLevel:2,  tip:'Commerce hub'},
+  {id:'garden',      icon:'🌿', name:'Garden',       green:7,  pollution:-2, energy:0,  density:1,  minLevel:2,  tip:'Urban greenery'},
+  {id:'bike_lane',   icon:'🚲', name:'Bike Lane',    green:4,  pollution:-2, energy:0,  density:2,  minLevel:2,  tip:'Eco transport'},
+  // ── Level 3: Small City ──
+  {id:'recycle',     icon:'♻️', name:'Recycle Ctr',  green:5,  pollution:-4, energy:1,  density:1,  minLevel:3,  tip:'Manages city waste'},
+  {id:'ev_station',  icon:'⚡', name:'EV Station',   green:4,  pollution:-3, energy:-2, density:2,  minLevel:3,  tip:'Electric vehicle charging'},
+  {id:'subway',      icon:'🚇', name:'Subway',       green:5,  pollution:-4, energy:-2, density:6,  minLevel:3,  tip:'Mass transit'},
+  {id:'greenhouse',  icon:'🌱', name:'Greenhouse',   green:9,  pollution:-3, energy:-1, density:1,  minLevel:3,  tip:'Urban farming'},
+  // ── Level 4: Urban Core ──
+  {id:'smart_house', icon:'🏡', name:'Smart House',  green:5,  pollution:-1, energy:3,  density:4,  minLevel:4,  tip:'AI-managed energy home'},
+  {id:'water_treat', icon:'💧', name:'Water Plant',  green:4,  pollution:-3, energy:-1, density:1,  minLevel:4,  tip:'Clean water system'},
+  {id:'solar_farm',  icon:'🌞', name:'Solar Farm',   green:10, pollution:-4, energy:12, density:0,  minLevel:4,  tip:'Large clean energy'},
+  // ── Level 5: Metropolis ──
+  {id:'arcology',    icon:'🏗️', name:'Arcology',     green:12, pollution:-5, energy:5,  density:10, minLevel:5,  tip:'Self-sustaining megastructure'},
+  {id:'hyperloop',   icon:'🚄', name:'Hyperloop',    green:6,  pollution:-5, energy:-3, density:8,  minLevel:5,  tip:'Future mass transit'},
+  // ── Level 6: Smart City ──
+  {id:'datacenter',  icon:'🖥️', name:'Data Center',  green:-2, pollution:3,  energy:-5, density:3,  minLevel:6,  tip:'Fuels the smart grid'},
+  {id:'tidal',       icon:'🌊', name:'Tidal Plant',  green:8,  pollution:-4, energy:10, density:0,  minLevel:6,  tip:'Ocean wave energy'},
+  {id:'rooftop_grn', icon:'🌺', name:'Rooftop Green',green:7,  pollution:-3, energy:1,  density:2,  minLevel:6,  tip:'Green rooftop ecosystem'},
+  // ── Level 7: Eco Capital ──
+  {id:'vertical_frm',icon:'🌾', name:'Vertical Farm',green:11, pollution:-4, energy:-2, density:2,  minLevel:7,  tip:'Sky-high urban farming'},
+  {id:'mag_lev',     icon:'🛤️', name:'Maglev Rail',  green:7,  pollution:-5, energy:-4, density:7,  minLevel:7,  tip:'Zero-emission rail network'},
+  {id:'bio_dome',    icon:'🫧',  name:'Bio Dome',     green:14, pollution:-6, energy:-2, density:2,  minLevel:7,  tip:'Enclosed nature sanctuary'},
+  // ── Level 8: Megacity ──
+  {id:'fusion',      icon:'⚛️', name:'Fusion Plant', green:9,  pollution:-7, energy:20, density:1,  minLevel:8,  tip:'Unlimited clean energy'},
+  {id:'sky_bridge',  icon:'🌉', name:'Sky Bridge',   green:3,  pollution:-2, energy:0,  density:8,  minLevel:8,  tip:'Elevated walkway network'},
+  {id:'carbon_cap',  icon:'🧲', name:'Carbon Capture',green:10,pollution:-8, energy:-3, density:0,  minLevel:8,  tip:'Removes CO₂ from air'},
+  // ── Level 9: Supercity ──
+  {id:'space_solar', icon:'🛰️', name:'Space Solar',  green:12, pollution:-6, energy:18, density:0,  minLevel:9,  tip:'Orbital solar array'},
+  {id:'ai_hub',      icon:'🤖', name:'AI City Hub',  green:6,  pollution:-4, energy:5,  density:9,  minLevel:9,  tip:'AI manages city efficiency'},
+  // ── Level 10: Utopia / NeoCity Prime ──
+  {id:'ecotower',    icon:'🌏', name:'Eco Tower',    green:18, pollution:-9, energy:10, density:12, minLevel:10, tip:'Earth\'s greenest skyscraper'},
+  {id:'utopia_park', icon:'🌈', name:'Utopia Park',  green:20, pollution:-8, energy:2,  density:5,  minLevel:10, tip:'Legendary mega-greenspace'},
+];
+
+/* ═══════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════ */
+let currentLevel = parseInt(sessionStorage.getItem('nc_level') || '1', 10);
+// nc_max_level tracks the highest level ever unlocked (used when replaying old levels)
+const maxUnlockedLevel = parseInt(sessionStorage.getItem('nc_max_level') || sessionStorage.getItem('nc_level') || '1', 10);
+// Clamp currentLevel to valid range
+currentLevel = Math.max(1, Math.min(currentLevel, LEVEL_INFO.length));
+let selectedElement = null;
+let eraserMode = false;
+let gender = 'male';
+let grid = {}; // key: "row-col", value: element id
+let elementCounts = {}; // id -> count
+
+function getGridDims() {
+  const lv = LEVEL_INFO[Math.min(currentLevel, LEVEL_INFO.length) - 1];
+  return { cols: lv.gridCols, rows: lv.gridRows };
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  updateLevelBadge();
+  buildElementBar();
+  buildGrid();
+  updateStats();
+});
+
+function updateLevelBadge() {
+  const lv = LEVEL_INFO[Math.min(currentLevel, LEVEL_INFO.length) - 1];
+  const { cols, rows } = getGridDims();
+  document.getElementById('tb-level-badge').textContent = `${lv.label} · ${lv.name} (${cols}×${rows})`;
+}
+
+/* ── Build element toolbar ── */
+function buildElementBar() {
+  const bar = document.getElementById('element-bar');
+  bar.innerHTML = '';
+
+  // Eraser button
+  const eraserBtn = document.createElement('button');
+  eraserBtn.className = 'el-btn';
+  eraserBtn.id = 'eraser-btn';
+  eraserBtn.innerHTML = `<span class="el-icon">🗑️</span><span class="el-name">Erase</span><span class="el-tooltip">Click to erase cell</span>`;
+  eraserBtn.onclick = toggleEraser;
+  bar.appendChild(eraserBtn);
+
+  const sep = document.createElement('div');
+  sep.className = 'el-sep';
+  bar.appendChild(sep);
+
+  let lastLevel = 0;
+  ELEMENTS.forEach(el => {
+    if (el.minLevel !== lastLevel) {
+      if (lastLevel > 0) {
+        const s = document.createElement('div');
+        s.className = 'el-sep';
+        bar.appendChild(s);
+      }
+      const lbl = document.createElement('div');
+      lbl.className = 'el-group-label';
+      lbl.textContent = `Lv.${el.minLevel}+`;
+      bar.appendChild(lbl);
+      lastLevel = el.minLevel;
+    }
+
+    const locked = el.minLevel > currentLevel;
+    const btn = document.createElement('button');
+    btn.className = `el-btn${locked ? ' el-locked' : ''}`;
+    btn.id = `el-btn-${el.id}`;
+    btn.innerHTML = `
+      <span class="el-icon">${locked ? '' : el.icon}</span>
+      <span class="el-name">${el.name}</span>
+      <span class="el-count" id="elc-${el.id}">0</span>
+      <span class="el-tooltip">${locked ? `Unlock at Lv.${el.minLevel}` : el.tip}</span>
+    `;
+    if (!locked) btn.onclick = () => selectElement(el.id);
+    bar.appendChild(btn);
+  });
+}
+
+/* ── Build grid ── */
+function buildGrid() {
+  const { cols: GRID_COLS, rows: GRID_ROWS } = getGridDims();
+  const gridEl = document.getElementById('city-grid');
+  gridEl.style.gridTemplateColumns = `repeat(${GRID_COLS}, 1fr)`;
+  gridEl.innerHTML = '';
+  document.getElementById('cells-total').textContent = GRID_COLS * GRID_ROWS;
+
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.id = `cell-${r}-${c}`;
+      cell.onclick = () => handleCellClick(r, c);
+      gridEl.appendChild(cell);
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ELEMENT SELECTION & GRID INTERACTION
+═══════════════════════════════════════════════════════ */
+function selectElement(id) {
+  eraserMode = false;
+  document.getElementById('eraser-btn').classList.remove('eraser-active');
+  if (selectedElement === id) {
+    selectedElement = null;
+    document.getElementById(`el-btn-${id}`).classList.remove('active');
+    return;
+  }
+  if (selectedElement) document.getElementById(`el-btn-${selectedElement}`)?.classList.remove('active');
+  selectedElement = id;
+  document.getElementById(`el-btn-${id}`).classList.add('active');
+}
+
+function toggleEraser() {
+  if (selectedElement) {
+    document.getElementById(`el-btn-${selectedElement}`)?.classList.remove('active');
+    selectedElement = null;
+  }
+  eraserMode = !eraserMode;
+  document.getElementById('eraser-btn').classList.toggle('eraser-active', eraserMode);
+  showToast(eraserMode ? '🗑 Eraser ON — click cells to remove' : '🗑 Eraser OFF');
+}
+
+function handleCellClick(r, c) {
+  const key = `${r}-${c}`;
+  const cell = document.getElementById(`cell-${r}-${c}`);
+
+  if (eraserMode) {
+    if (grid[key]) {
+      const old = grid[key];
+      elementCounts[old] = Math.max(0, (elementCounts[old] || 0) - 1);
+      delete grid[key];
+      cell.innerHTML = '';
+      cell.classList.remove('filled');
+      updateCountDisplay(old);
+      updateStats();
+    }
+    return;
+  }
+
+  if (!selectedElement) { showToast('Select an element from the toolbar first'); return; }
+
+  const el = ELEMENTS.find(e => e.id === selectedElement);
+  const count = elementCounts[selectedElement] || 0;
+
+  // Replace existing
+  if (grid[key]) {
+    const old = grid[key];
+    elementCounts[old] = Math.max(0, (elementCounts[old] || 0) - 1);
+    updateCountDisplay(old);
+  }
+
+  // Check max
+  if (!grid[key] && count >= MAX_PER_ELEMENT) {
+    showToast(`Max ${MAX_PER_ELEMENT} ${el.name}s placed!`);
+    return;
+  }
+
+  grid[key] = selectedElement;
+  elementCounts[selectedElement] = (elementCounts[selectedElement] || 0) + (grid[key] === selectedElement ? 0 : 1);
+  // recount properly
+  elementCounts[selectedElement] = Object.values(grid).filter(v => v === selectedElement).length;
+
+  cell.innerHTML = `<span style="font-size:1.4rem;line-height:1">${el.icon}</span>`;
+  cell.classList.add('filled');
+  updateCountDisplay(selectedElement);
+  updateStats();
+}
+
+function updateCountDisplay(id) {
+  const cnt = elementCounts[id] || 0;
+  const el = document.getElementById(`elc-${id}`);
+  if (el) {
+    el.textContent = cnt;
+    el.className = `el-count${cnt >= MAX_PER_ELEMENT ? ' el-max' : ''}`;
+  }
+  // update cells-used
+  document.getElementById('cells-used').textContent = Object.keys(grid).length;
+}
+
+/* ═══════════════════════════════════════════════════════
+   STATS ENGINE
+═══════════════════════════════════════════════════════ */
+function calcStats() {
+  const vehicles   = parseInt(document.getElementById('vehicles-input').value)   || 0;
+  const population = parseInt(document.getElementById('population-input').value) || 0;
+  const trees      = parseInt(document.getElementById('trees-input').value)      || 0;
+
+  const totalCells   = Object.keys(grid).length;
+  const hasAnyInput  = totalCells > 0 || vehicles > 0 || trees > 0 || population > 0;
+
+  // If absolutely nothing entered — everything stays 0
+  if (!hasAnyInput) {
+    return { green: 0, pollute: 0, energy: 0, density: 0, vehicles, population, trees };
+  }
+
+  let rawGreen = 0, rawPollute = 0, rawEnergy = 0, rawDensity = 0;
+
+  // Grid element contributions
+  ELEMENTS.forEach(el => {
+    const cnt = elementCounts[el.id] || 0;
+    rawGreen   += el.green     * cnt;
+    rawPollute += el.pollution * cnt;
+    rawEnergy  += el.energy    * cnt;
+    rawDensity += el.density   * cnt;
+  });
+
+  // Vehicle penalty: every 10k vehicles → +3 pollution, -1 green
+  const vehFactor = vehicles / 10000;
+  rawGreen   -= vehFactor * 1;
+  rawPollute += vehFactor * 3;
+
+  // Tree bonus: every 1,000 trees → +3 green, -2 pollution
+  const treeFactor = trees / 1000;
+  rawGreen   += treeFactor * 3;
+  rawPollute -= treeFactor * 2;
+
+  // Population adds density; large pop with few houses = slightly more pollution
+  rawDensity += Math.min(population / 100000, 20);
+  rawPollute += Math.min(population / 500000, 5);
+
+  // Clamp raws to [0, 100] scale before percentage display
+  // Scale so that a mid-sized city with good elements hits ~50%
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const green   = Math.round(clamp(rawGreen,   0, 100));
+  const pollute = Math.round(clamp(rawPollute, 0, 100));
+  const energy  = Math.round(clamp(rawEnergy + 30, 0, 100));   // offset so positive energy shows up
+  const density = Math.round(clamp(rawDensity * 1.2, 0, 100));
+
+  return { green, pollute, energy, density, vehicles, population, trees };
+}
+
+function getLevel(stats) {
+  if (stats.green >= 65 && stats.pollute <= 30) return 'high';
+  if (stats.green >= 35 && stats.pollute <= 55) return 'moderate';
+  return 'polluted';
+}
+
+function updateStats() {
+  const s = calcStats();
+  const lvl = getLevel(s);
+  document.getElementById('cells-used').textContent = Object.keys(grid).length;
+
+  // Bars
+  document.getElementById('bar-green').style.width   = s.green + '%';
+  document.getElementById('bar-pollute').style.width = s.pollute + '%';
+  document.getElementById('bar-energy').style.width  = s.energy + '%';
+  document.getElementById('bar-density').style.width = s.density + '%';
+  document.getElementById('val-green').textContent   = s.green + '%';
+  document.getElementById('val-pollute').textContent = s.pollute + '%';
+  document.getElementById('val-energy').textContent  = s.energy + '%';
+  document.getElementById('val-density').textContent = s.density + '%';
+
+  // Pollution badge
+  const badge = document.getElementById('pollution-badge');
+  const dot   = document.getElementById('pb-dot');
+  const lbl   = document.getElementById('pb-label');
+  const sub   = document.getElementById('pb-sub');
+  if (Object.keys(grid).length === 0 && !document.getElementById('vehicles-input').value) {
+    badge.style.background = 'rgba(0,229,255,0.05)';
+    badge.style.border = '1px solid rgba(0,229,255,0.15)';
+    dot.style.background = 'var(--nc)';
+    lbl.style.color = 'var(--nc)';
+    lbl.textContent = 'Awaiting Data';
+    sub.textContent = 'Add elements to begin';
+  } else if (lvl === 'high') {
+    badge.style.background = 'rgba(0,255,136,0.06)';
+    badge.style.border = '1px solid rgba(0,255,136,0.2)';
+    dot.style.background = 'var(--ng)';
+    lbl.style.color = 'var(--ng)';
+    lbl.textContent = '🌿 ECO CITY';
+    sub.textContent = `Green: ${s.green}% · Pollution: ${s.pollute}%`;
+  } else if (lvl === 'moderate') {
+    badge.style.background = 'rgba(255,230,0,0.06)';
+    badge.style.border = '1px solid rgba(255,230,0,0.2)';
+    dot.style.background = 'var(--ny)';
+    lbl.style.color = 'var(--ny)';
+    lbl.textContent = '⚡ DEVELOPING';
+    sub.textContent = `Green: ${s.green}% · Pollution: ${s.pollute}%`;
+  } else {
+    badge.style.background = 'rgba(255,77,109,0.06)';
+    badge.style.border = '1px solid rgba(255,77,109,0.2)';
+    dot.style.background = 'var(--nr)';
+    lbl.style.color = 'var(--nr)';
+    lbl.textContent = '🏭 POLLUTED';
+    sub.textContent = `Green: ${s.green}% · Pollution: ${s.pollute}%`;
+  }
+
+  // Elements summary
+  updateElSummary();
+}
+
+function updateElSummary() {
+  const summary = document.getElementById('el-summary');
+  const items = ELEMENTS.filter(e => (elementCounts[e.id] || 0) > 0)
+    .map(e => `<span class="el-tag">${e.icon} ${e.name} ×${elementCounts[e.id]}</span>`);
+  summary.innerHTML = items.length ? items.join('') : '<span style="font-size:.62rem;color:var(--muted)">No elements yet</span>';
+}
+
+/* ═══════════════════════════════════════════════════════
+   GENDER
+═══════════════════════════════════════════════════════ */
+function setGender(g) {
+  gender = g;
+  document.getElementById('gender-m').classList.toggle('active', g === 'male');
+  document.getElementById('gender-f').classList.toggle('active', g === 'female');
+}
+
+/* ═══════════════════════════════════════════════════════
+   3D CITY VIEW (Canvas)
+═══════════════════════════════════════════════════════ */
+let animFrame = null;
+let cityAngle = 0;
+
+function viewCity() {
+  if (Object.keys(grid).length === 0) {
+    showToast('Place some elements in your city first!');
+    return;
+  }
+  const s = calcStats();
+  const lvl = getLevel(s);
+
+  // Update HUD
+  const pop = parseInt(document.getElementById('population-input').value) || 0;
+  const veh = parseInt(document.getElementById('vehicles-input').value) || 0;
+  const trees = parseInt(document.getElementById('trees-input').value) || 0;
+  document.getElementById('hud-pop').textContent   = pop   ? pop.toLocaleString()   : '—';
+  document.getElementById('hud-veh').textContent   = veh   ? veh.toLocaleString()   : '—';
+  document.getElementById('hud-trees').textContent = trees ? trees.toLocaleString() : '—';
+  document.getElementById('hud-green').textContent = s.green + '%';
+  document.getElementById('hud-status').textContent = lvl === 'high' ? 'ECO' : lvl === 'moderate' ? 'OK' : 'ALERT';
+  document.getElementById('hud-status').style.color = lvl === 'high' ? 'var(--ng)' : lvl === 'moderate' ? 'var(--ny)' : 'var(--nr)';
+
+  // Pollution badge
+  const pb = document.getElementById('hud-pollution-badge');
+  const pi = document.getElementById('hud-pollution-icon');
+  const pt = document.getElementById('hud-pollution-text');
+  if (lvl === 'high') {
+    pb.style.borderColor = 'var(--ng)'; pb.style.color = 'var(--ng)';
+    pi.textContent = '🌿'; pt.textContent = 'ECO CITY';
+  } else if (lvl === 'moderate') {
+    pb.style.borderColor = 'var(--ny)'; pb.style.color = 'var(--ny)';
+    pi.textContent = '⚡'; pt.textContent = 'DEVELOPING';
+  } else {
+    pb.style.borderColor = 'var(--nr)'; pb.style.color = 'var(--nr)';
+    pi.textContent = '🏭'; pt.textContent = 'POLLUTED';
+  }
+
+  // Character
+  const figWrap  = document.getElementById('hud-figure');
+  const fig      = document.getElementById('figure-emoji');
+  const figFace  = document.getElementById('figure-face');
+  const figLbl   = document.getElementById('figure-label');
+  const smogR1   = document.getElementById('smog-ring');
+  const smogR2   = document.getElementById('smog-ring2');
+
+  if (lvl === 'polluted') {
+    // Sick figure — reflects gender even when sick
+    const sickFig = s.pollute >= 75
+      ? (gender === 'male' ? '🤮' : '🤮')
+      : (gender === 'male' ? '🤒' : '🤒');
+    fig.textContent = sickFig;
+    fig.className   = 'figure-emoji sick-filter';
+    figFace.style.display = 'none';
+    smogR1.style.display  = 'block';
+    smogR2.style.display  = 'block';
+    figWrap.classList.add('polluted');
+    figLbl.textContent    = s.pollute >= 75 ? 'Severely ill from pollution!' : 'Sick & choking on smog...';
+    figLbl.style.color      = 'var(--nr)';
+    figLbl.style.textShadow = '0 0 8px var(--nr)';
+  } else if (lvl === 'moderate') {
+    fig.textContent = gender === 'male' ? '👨' : '👩';
+    fig.className   = 'figure-emoji moderate-filter';
+    figFace.textContent   = '😟';
+    figFace.style.display = 'block';
+    smogR1.style.display  = 'none';
+    smogR2.style.display  = 'none';
+    figWrap.classList.remove('polluted');
+    figLbl.textContent    = 'Worried — city needs more green...';
+    figLbl.style.color      = 'var(--ny)';
+    figLbl.style.textShadow = '0 0 8px var(--ny)';
+  } else {
+    fig.textContent = gender === 'male' ? '🧑‍🌾' : '👩‍🌾';
+    fig.className   = 'figure-emoji green-glow';
+    figFace.textContent   = '😊';
+    figFace.style.display = 'block';
+    smogR1.style.display  = 'none';
+    smogR2.style.display  = 'none';
+    figWrap.classList.remove('polluted');
+    figLbl.textContent    = gender === 'male' ? 'He\'s thriving in paradise!' : 'She\'s thriving in paradise!';
+    figLbl.style.color      = 'var(--ng)';
+    figLbl.style.textShadow = '0 0 8px var(--ng)';
+  }
+
+  document.getElementById('city-view-modal').classList.add('open');
+  startCityRender(s, lvl);
+}
+
+function closeCityView() {
+  document.getElementById('city-view-modal').classList.remove('open');
+  if (animFrame) cancelAnimationFrame(animFrame);
+}
+
+/* ── 3D Canvas Renderer ── */
+function startCityRender(stats, lvl) {
+  const canvas = document.getElementById('city-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const isGreen    = lvl === 'high';
+  const isModerate = lvl === 'moderate';
+  const isPolluted = lvl === 'polluted';
+
+  // Gather placed element types (unique)
+  const placed = {};
+  Object.values(grid).forEach(id => { placed[id] = (placed[id] || 0) + 1; });
+
+  let t = 0;
+  function draw() {
+    t += 0.012;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const W = canvas.width, H = canvas.height;
+
+    // ── SKY ──
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.65);
+    if (isGreen) {
+      skyGrad.addColorStop(0, '#000e1a');
+      skyGrad.addColorStop(0.5, '#02200e');
+      skyGrad.addColorStop(1, '#04380f');
+    } else if (isModerate) {
+      skyGrad.addColorStop(0, '#0a0e00');
+      skyGrad.addColorStop(0.5, '#1a2200');
+      skyGrad.addColorStop(1, '#1e2a02');
+    } else {
+      skyGrad.addColorStop(0, '#1a0600');
+      skyGrad.addColorStop(0.5, '#2a0e02');
+      skyGrad.addColorStop(1, '#3a1402');
+    }
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── SMOG LAYER (polluted) ──
+    if (isPolluted) {
+      for (let i = 0; i < 8; i++) {
+        const sx = W * (0.1 * i + 0.05 + Math.sin(t * 0.3 + i) * 0.04);
+        const sy = H * (0.15 + Math.sin(t * 0.2 + i * 0.7) * 0.05);
+        const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, W * 0.18);
+        sg.addColorStop(0, `rgba(180,80,20,${0.12 + Math.sin(t + i) * 0.04})`);
+        sg.addColorStop(1, 'transparent');
+        ctx.fillStyle = sg;
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+
+    // ── GREEN AURORA (eco) ──
+    if (isGreen) {
+      for (let i = 0; i < 3; i++) {
+        const ax = W * (0.2 + i * 0.3);
+        const ay = H * (0.1 + Math.sin(t * 0.4 + i) * 0.06);
+        const ag = ctx.createRadialGradient(ax, ay, 0, ax, ay, W * 0.25);
+        ag.addColorStop(0, `rgba(0,255,136,${0.05 + Math.sin(t * 0.5 + i) * 0.02})`);
+        ag.addColorStop(1, 'transparent');
+        ctx.fillStyle = ag;
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+
+    // ── STARS ──
+    const starCount = isPolluted ? 10 : isModerate ? 30 : 60;
+    for (let i = 0; i < starCount; i++) {
+      const sx = ((i * 137.5 + 100) % W);
+      const sy = ((i * 73.1 + 50) % (H * 0.45));
+      const sa = 0.3 + 0.5 * Math.sin(t * 1.5 + i);
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.2, 0, Math.PI * 2);
+      ctx.fillStyle = isGreen ? `rgba(0,255,136,${sa * 0.5})` : `rgba(255,255,255,${sa * 0.4})`;
+      ctx.fill();
+    }
+
+    // ── GROUND PLANE ──
+    const gndGrad = ctx.createLinearGradient(0, H * 0.55, 0, H);
+    if (isGreen) {
+      gndGrad.addColorStop(0, '#0a2a0a');
+      gndGrad.addColorStop(1, '#020e02');
+    } else if (isModerate) {
+      gndGrad.addColorStop(0, '#1a2200');
+      gndGrad.addColorStop(1, '#080e00');
+    } else {
+      gndGrad.addColorStop(0, '#3a1a02');
+      gndGrad.addColorStop(1, '#100600');
+    }
+    ctx.fillStyle = gndGrad;
+    ctx.fillRect(0, H * 0.55, W, H);
+
+    // Ground glow line
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.555);
+    ctx.lineTo(W, H * 0.555);
+    ctx.strokeStyle = isGreen ? 'rgba(0,255,136,0.3)' : isModerate ? 'rgba(200,255,0,0.2)' : 'rgba(255,100,30,0.25)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // ── ROAD ──
+    const roadY = H * 0.75;
+    const roadH = H * 0.09;
+    ctx.fillStyle = '#0a1020';
+    ctx.fillRect(0, roadY, W, roadH);
+    // Road dashes
+    ctx.strokeStyle = 'rgba(255,230,0,0.4)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([30, 20]);
+    ctx.beginPath();
+    ctx.moveTo(0, roadY + roadH / 2);
+    ctx.lineTo(W, roadY + roadH / 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // ── VEHICLES on road ──
+    const vehCount = Math.min(Math.floor((parseInt(document.getElementById('vehicles-input').value)||0) / 20000) + 2, 8);
+    for (let i = 0; i < vehCount; i++) {
+      const vx = (W * (0.1 + i * 0.13) + t * 60 * (i % 2 === 0 ? 1 : -0.7)) % W;
+      const vy = roadY + (i % 2 === 0 ? roadH * 0.28 : roadH * 0.62);
+      ctx.font = '1.2rem serif';
+      ctx.save();
+      if (i % 2 !== 0) { ctx.scale(-1, 1); ctx.translate(-vx * 2, 0); }
+      ctx.fillText(isPolluted ? '🚗' : isGreen ? '🚕' : '🚙', vx - 16, vy + 8);
+      ctx.restore();
+    }
+
+    // ── BUILDINGS (isometric-style) ──
+    const buildingDefs = getBuildingDefs(placed);
+    const baselineY = H * 0.72;
+    const perspective = 0.45;
+
+    buildingDefs.forEach((b, i) => {
+      const bx = b.x * W;
+      const bw = b.w * W;
+      const bh = b.h * H;
+      const by = baselineY - bh;
+      const sideW = bw * perspective;
+      const sideH = bh * 0.3;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(bx + bw / 2, baselineY + 8, bw * 0.5, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Side face
+      ctx.fillStyle = b.sideColor;
+      ctx.beginPath();
+      ctx.moveTo(bx + bw, by);
+      ctx.lineTo(bx + bw + sideW, by - sideH);
+      ctx.lineTo(bx + bw + sideW, baselineY - sideH);
+      ctx.lineTo(bx + bw, baselineY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Top face
+      ctx.fillStyle = b.topColor;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + bw, by);
+      ctx.lineTo(bx + bw + sideW, by - sideH);
+      ctx.lineTo(bx + sideW, by - sideH);
+      ctx.closePath();
+      ctx.fill();
+
+      // Front face
+      ctx.fillStyle = b.frontColor;
+      ctx.fillRect(bx, by, bw, bh);
+
+      // Windows
+      drawWindows(ctx, bx, by, bw, bh, b.winColor, b.winGlow, t, i);
+
+      // Roof details
+      if (b.hasSolar) {
+        ctx.fillStyle = 'rgba(0,229,255,0.4)';
+        ctx.fillRect(bx + bw * 0.1, by - 6, bw * 0.8, 6);
+      }
+      if (b.hasGreen) {
+        ctx.font = '1rem serif';
+        ctx.fillText('🌿', bx + bw * 0.2, by - 2);
+        ctx.fillText('🌿', bx + bw * 0.55, by - 2);
+      }
+      if (b.antenna) {
+        ctx.strokeStyle = 'rgba(255,77,109,0.7)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(bx + bw / 2, by);
+        ctx.lineTo(bx + bw / 2, by - 22);
+        ctx.stroke();
+        const blinkA = Math.abs(Math.sin(t * 3 + i));
+        ctx.beginPath();
+        ctx.arc(bx + bw / 2, by - 22, 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,77,109,${blinkA})`;
+        ctx.fill();
+      }
+    });
+
+    // ── TREES (green/moderate) ──
+    if (!isPolluted) {
+      const treeCount = isGreen ? 18 : 8;
+      for (let i = 0; i < treeCount; i++) {
+        const tx = (W * (0.05 + ((i * 61.8) % 1) * 0.9));
+        const ty = baselineY - 2;
+        const tsize = 0.6 + (i % 3) * 0.3;
+        ctx.font = `${1.2 * tsize}rem serif`;
+        ctx.fillText(isGreen ? '🌳' : '🌲', tx - 12, ty);
+      }
+    }
+
+    // ── SMOG PARTICLES ──
+    if (isPolluted) {
+      for (let i = 0; i < 25; i++) {
+        const px = (W * 0.1 * i + t * 20 * (i % 3 + 0.5)) % W;
+        const py = H * (0.3 + Math.sin(t * 0.5 + i * 0.4) * 0.15 + (i % 4) * 0.04);
+        const psize = 3 + (i % 4) * 2;
+        ctx.beginPath();
+        ctx.arc(px, py, psize, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(150,80,20,${0.08 + Math.sin(t + i) * 0.04})`;
+        ctx.fill();
+      }
+    }
+
+    // ── FLOATING PARTICLES (eco) ──
+    if (isGreen) {
+      for (let i = 0; i < 15; i++) {
+        const px = (W * ((i * 0.07) % 1) + Math.sin(t * 0.4 + i) * 20);
+        const py = H * (0.2 + ((t * 0.03 + i * 0.07) % 0.5));
+        ctx.beginPath();
+        ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,255,136,${0.3 + Math.sin(t * 2 + i) * 0.2})`;
+        ctx.fill();
+      }
+    }
+
+    animFrame = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function getBuildingDefs(placed) {
+  const hasSolar = (placed['solar'] || 0) + (placed['solar_farm'] || 0) + (placed['space_solar'] || 0) > 0;
+  const hasGreen = (placed['park'] || 0) + (placed['garden'] || 0) + (placed['greenhouse'] || 0) + (placed['bio_dome'] || 0) + (placed['vertical_frm'] || 0) + (placed['utopia_park'] || 0) > 0;
+  const hasFactory = (placed['factory'] || 0) > 0;
+  const hasSmartHouse = (placed['smart_house'] || 0) > 0;
+  const hasArc = (placed['arcology'] || 0) > 0;
+  const hasEcoTower = (placed['ecotower'] || 0) > 0;
+  const hasFusion = (placed['fusion'] || 0) > 0;
+  const hasAI = (placed['ai_hub'] || 0) > 0;
+
+  const stats = calcStats();
+  const lvl = getLevel(stats);
+  const isGreen = lvl === 'high';
+  const isPolluted = lvl === 'polluted';
+
+  // Front color based on eco level
+  const fc = isPolluted ? '#1a1206' : isGreen ? '#061a0e' : '#0e1606';
+  const sc = isPolluted ? '#120e04' : isGreen ? '#041208' : '#0a1204';
+  const tc = isPolluted ? '#2a1e08' : isGreen ? '#0a2e10' : '#141e08';
+
+  // Generate a varied row of buildings
+  const buildings = [];
+  const W_UNIT = 1.0 / 12;
+  const positions = [0.02, 0.09, 0.17, 0.25, 0.34, 0.43, 0.52, 0.61, 0.70, 0.78, 0.86, 0.92];
+  const heights   = [0.20, 0.30, 0.18, 0.38, 0.24, 0.45, 0.22, 0.35, 0.28, 0.42, 0.20, 0.32];
+  const widths    = [0.055,0.06, 0.055,0.07, 0.058,0.075,0.055,0.065,0.06, 0.07, 0.05, 0.06 ];
+
+  positions.forEach((x, i) => {
+    buildings.push({
+      x, y: 0, w: widths[i], h: heights[i],
+      frontColor: i % 3 === 0 ? '#06142a' : i % 3 === 1 ? fc : '#0a1820',
+      sideColor: sc, topColor: tc,
+      winColor: isGreen ? 'rgba(0,255,136,0.5)' : isPolluted ? 'rgba(255,120,30,0.4)' : 'rgba(0,229,255,0.4)',
+      winGlow: isGreen ? 'rgba(0,255,136,0.15)' : isPolluted ? 'rgba(255,120,30,0.1)' : 'rgba(0,229,255,0.1)',
+      hasSolar: hasSolar && i % 3 === 0,
+      hasGreen: hasGreen && i % 4 === 1,
+      antenna: i % 5 === 0,
+    });
+  });
+
+  // Add arcology if placed
+  if (hasArc) {
+    buildings.push({
+      x: 0.47, y: 0, w: 0.06, h: 0.52,
+      frontColor: '#061828', sideColor: '#040e1a', topColor: '#0a2030',
+      winColor: 'rgba(0,255,136,0.6)', winGlow: 'rgba(0,255,136,0.2)',
+      hasSolar: true, hasGreen: true, antenna: true,
+    });
+  }
+
+  // Add eco tower if placed (very tall, ultra-green)
+  if (hasEcoTower) {
+    buildings.push({
+      x: 0.38, y: 0, w: 0.05, h: 0.65,
+      frontColor: '#031a08', sideColor: '#021206', topColor: '#063018',
+      winColor: 'rgba(0,255,136,0.8)', winGlow: 'rgba(0,255,136,0.3)',
+      hasSolar: true, hasGreen: true, antenna: true,
+    });
+  }
+
+  // Add fusion plant (glowing cyan dome shape represented as wide short building)
+  if (hasFusion) {
+    buildings.push({
+      x: 0.56, y: 0, w: 0.09, h: 0.28,
+      frontColor: '#030e20', sideColor: '#020a16', topColor: '#051828',
+      winColor: 'rgba(0,229,255,0.9)', winGlow: 'rgba(0,229,255,0.35)',
+      hasSolar: false, hasGreen: false, antenna: true,
+    });
+  }
+
+  return buildings;
+}
+
+function drawWindows(ctx, bx, by, bw, bh, winColor, winGlow, t, seed) {
+  const cols = Math.max(2, Math.floor(bw / 12));
+  const rows = Math.max(2, Math.floor(bh / 18));
+  const ww = bw * 0.12, wh = 8;
+  const hgap = bw / (cols + 1);
+  const vgap = bh / (rows + 1);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const wx = bx + hgap * (c + 1) - ww / 2;
+      const wy = by + vgap * (r + 1) - wh / 2;
+      // Flicker effect
+      const on = Math.sin(t * 2 + seed * 3 + r * 7 + c * 11) > -0.5;
+      if (on) {
+        ctx.fillStyle = winGlow;
+        ctx.fillRect(wx - 2, wy - 2, ww + 4, wh + 4);
+        ctx.fillStyle = winColor;
+        ctx.fillRect(wx, wy, ww, wh);
+      }
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESULT
+═══════════════════════════════════════════════════════ */
+function showResult() {
+  const s = calcStats();
+  const lvl = getLevel(s);
+  const passed = lvl === 'high' || lvl === 'moderate';
+
+  // Set result bars
+  const bars = [
+    {id:'green',   val:s.green,   color:'var(--ng)'},
+    {id:'pollute', val:s.pollute, color:'var(--nr)'},
+    {id:'energy',  val:s.energy,  color:'var(--ny)'},
+    {id:'density', val:s.density, color:'var(--nc)'},
+  ];
+  setTimeout(() => {
+    bars.forEach(b => {
+      document.getElementById(`rb-${b.id}`).style.width  = b.val + '%';
+      document.getElementById(`rb-${b.id}`).style.background = b.color;
+      document.getElementById(`rbv-${b.id}`).textContent = b.val + '%';
+    });
+  }, 200);
+
+  // Verdict
+  const verdict = document.getElementById('result-verdict');
+  const vtext   = document.getElementById('verdict-text');
+  const vsub    = document.getElementById('verdict-sub');
+  const icon    = document.getElementById('result-icon');
+  const title   = document.getElementById('result-title');
+  const sub     = document.getElementById('result-sub');
+  const nextBtn = document.getElementById('btn-next-level');
+
+  if (lvl === 'high') {
+    icon.textContent = '🏆';
+    title.textContent = 'ECO CHAMPION!';
+    sub.textContent = 'Your city is a shining example of sustainable development.';
+    verdict.style.background = 'rgba(0,255,136,0.06)';
+    verdict.style.borderColor = 'rgba(0,255,136,0.3)';
+    vtext.style.color = 'var(--ng)';
+    vtext.textContent = '🌿 LEVEL PASSED — HIGH GREEN';
+    vsub.textContent = `Green ${s.green}% exceeds target. Pollution ${s.pollute}% is within limits.`;
+    nextBtn.disabled = false;
+  } else if (lvl === 'moderate') {
+    icon.textContent = '✅';
+    title.textContent = 'LEVEL CLEARED!';
+    sub.textContent = 'Your city meets the minimum green standards. Keep improving!';
+    verdict.style.background = 'rgba(255,230,0,0.06)';
+    verdict.style.borderColor = 'rgba(255,230,0,0.3)';
+    vtext.style.color = 'var(--ny)';
+    vtext.textContent = '⚡ LEVEL PASSED — MODERATE';
+    vsub.textContent = `Green ${s.green}% meets threshold. Consider adding more parks.`;
+    nextBtn.disabled = false;
+  } else {
+    icon.textContent = '⚠️';
+    title.textContent = 'LEVEL FAILED';
+    sub.textContent = 'Pollution is too high. Reduce factories and add green elements.';
+    verdict.style.background = 'rgba(255,77,109,0.06)';
+    verdict.style.borderColor = 'rgba(255,77,109,0.3)';
+    vtext.style.color = 'var(--nr)';
+    vtext.textContent = '🏭 FAILED — TOO POLLUTED';
+    vsub.textContent = `Green ${s.green}% is below threshold. Pollution ${s.pollute}% too high.`;
+    nextBtn.disabled = true;
+  }
+
+  document.getElementById('result-modal').classList.add('open');
+}
+
+function retryLevel() {
+  document.getElementById('result-modal').classList.remove('open');
+  document.getElementById('city-view-modal').classList.remove('open');
+  if (animFrame) cancelAnimationFrame(animFrame);
+  clearGrid();
+}
+
+function clearGrid() {
+  const { cols: GRID_COLS, rows: GRID_ROWS } = getGridDims();
+  grid = {};
+  elementCounts = {};
+  ELEMENTS.forEach(e => {
+    const el = document.getElementById(`elc-${e.id}`);
+    if (el) el.textContent = '0';
+  });
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const cell = document.getElementById(`cell-${r}-${c}`);
+      if (cell) { cell.innerHTML = ''; cell.classList.remove('filled'); }
+    }
+  }
+  document.getElementById('vehicles-input').value = '';
+  document.getElementById('population-input').value = '';
+  document.getElementById('trees-input').value = '';
+  document.getElementById('cells-used').textContent = '0';
+  updateStats();
+  showToast('City cleared — start fresh!');
+}
+
+function nextLevel() {
+  document.getElementById('result-modal').classList.remove('open');
+  document.getElementById('city-view-modal').classList.remove('open');
+  if (animFrame) cancelAnimationFrame(animFrame);
+
+  // Save this level's result to localStorage before advancing
+  const s = calcStats();
+  const lvl = getLevel(s);
+  const lsKey = 'nc_history';
+  let history = {};
+  try { history = JSON.parse(localStorage.getItem(lsKey) || '{}'); } catch(e) {}
+
+  // Count elements placed
+  const elSnapshot = {};
+  ELEMENTS.forEach(e => { if (elementCounts[e.id] > 0) elSnapshot[e.id] = { icon: e.icon, name: e.name, count: elementCounts[e.id] }; });
+
+  history[currentLevel] = {
+    level: currentLevel,
+    levelName: LEVEL_INFO[currentLevel-1].name,
+    levelSubtitle: LEVEL_INFO[currentLevel-1].subtitle,
+    green:    s.green,
+    pollute:  s.pollute,
+    energy:   s.energy,
+    density:  s.density,
+    vehicles: s.vehicles,
+    population: s.population,
+    trees:    s.trees,
+    result:   lvl,   // 'high' | 'moderate' | 'polluted'
+    cellsUsed: Object.keys(grid).length,
+    gridSize: `${LEVEL_INFO[currentLevel-1].gridCols}×${LEVEL_INFO[currentLevel-1].gridRows}`,
+    elements: elSnapshot,
+    timestamp: Date.now(),
+  };
+  try { localStorage.setItem(lsKey, JSON.stringify(history)); } catch(e) {}
+
+  // After completing/replaying, restore the true highest unlocked level
+  const trueMax = Math.max(maxUnlockedLevel, currentLevel + 1);
+
+  if (currentLevel < LEVEL_INFO.length) {
+    const nextLv = Math.max(trueMax, currentLevel + 1); // never go backwards
+    sessionStorage.setItem('nc_level', String(nextLv));
+    sessionStorage.removeItem('nc_max_level'); // clear replay flag
+    // Flash then redirect to history
+    const flash = document.getElementById('unlock-flash');
+    flash.style.display = 'block';
+    setTimeout(() => {
+      flash.style.display = 'none';
+      window.location.href = 'neocity-history.html';
+    }, 700);
+  } else {
+    sessionStorage.setItem('nc_level', String(LEVEL_INFO.length + 1)); // mark all done
+    try { localStorage.setItem(lsKey, JSON.stringify(history)); } catch(e) {}
+    const flash = document.getElementById('unlock-flash');
+    flash.style.display = 'block';
+    setTimeout(() => {
+      flash.style.display = 'none';
+      window.location.href = 'neocity-history.html';
+    }, 700);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   MISC
+═══════════════════════════════════════════════════════ */
+function goBack() {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  window.location.href = 'neocity-dashboard.html';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Resize canvas on window resize
+window.addEventListener('resize', () => {
+  const canvas = document.getElementById('city-canvas');
+  if (canvas && document.getElementById('city-view-modal').classList.contains('open')) {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+});
+</script>
+</body>
+</html>
